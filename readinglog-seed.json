@@ -1,0 +1,28 @@
+{
+    "books": [
+        {
+            "id": 1710000000001,
+            "title": "Dune",
+            "author": "Frank Herber",
+            "status": "reading",
+            "createdAt": "2025-08-01T12:00:00.000Z"
+        }, 
+        {
+             "id": 1710000000002,
+            "title": "Empire of Silence",
+            "author": "Christopher Ruocchio",
+            "status": "planned",
+            "createdAt": "2025-08-01T12:00:01.000Z"
+        },
+        {
+             "id": 1710000000003,
+            "title": "The Hobbit",
+            "author": "J.R.R Tolkien",
+            "status": "finished",
+            "createdAt": "2025-08-10T00:00:00.000Z"
+        }
+    ],
+    "logs": [],
+    "profile": {},
+    "collections": []
+}

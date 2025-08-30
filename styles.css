@@ -1,0 +1,15 @@
+#rest {
+    margin-top: 1rem;
+    text-align: center;
+}
+#reset-app {
+    background: #222;
+    color: whitesmoke;
+    border: none;
+    padding: 0.5rem 1rem;
+    border-radius: 6px;
+    cursor: pointer;
+}
+#reset-app:hover {
+    background: #444;
+}
