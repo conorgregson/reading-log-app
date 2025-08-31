@@ -1,6 +1,6 @@
 # Contributing to Readr
 
-Thanks for our interest in contributing to **Readr** 🎉
+Thanks for our interest in contributing to **Readr** 🎉.
 We welcome issue, feature requests, and pull requests to help improve the project.
 
 ---
