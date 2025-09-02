@@ -31,4 +31,4 @@ See [Getting Started](Getting-Started) for details.
 
 ## 🔗 Related
 - [Main Repository](https://github.com/conorgregson/reading-log-app)  
-- [Security Policy](../blob/main/SECURITY.md)  
+- [Security Policy](../.github/ISSUE_TEMPLATE/SECURITY.md)  
