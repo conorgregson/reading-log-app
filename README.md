@@ -2,18 +2,18 @@
 
 [![License: GPL v3](https://img.shields.io/badge/License-GPLv3-008080.svg)](./LICENSE)
 ![Made with JavaScript](https://img.shields.io/badge/Made%20with-JavaScript-003366.svg)
+![Docs](https://img.shields.io/badge/Docs-Available-008080.svg)
+
+
+Minimal, offline-first reading log with JSON backup/import, security policy, and contributor-friendly docs.
+
+🔗 **[Full Documentation →](./docs/)**
 
 ---
 
-### ✅ Features
-![Feature: Add/Edit](https://img.shields.io/badge/Feature-Add%2FEdit-008080.svg) ![Feature: Backup](https://img.shields.io/badge/Feature-Backup-003366.svg) ![Feature: LocalStorage](https://img.shields.io/badge/Feature-LocalStorage-008080.svg)
-
-### 🎯 Future Roadmap
-![Planned: Search](https://img.shields.io/badge/Planned-Search-999999.svg) ![Planned: Tags](https://img.shields.io/badge/Planned-Tags-777777.svg) ![Planned: API%20Integration](https://img.shields.io/badge/Planned-API%20Integration-555555.svg)
-
-## Table of Contents
+## 📑 Table of Contents
 - [About](#-about)
-- [Features](#-features-so-far)
+- [Features](#-features)
 - [Tech Stack](#️-tech-stack)
 - [Roadmap](#-roadmap-checklist)
 - [Installation & Usage](#-installation--usage)
@@ -24,13 +24,13 @@
 
 ---
 
-## 📖 About
-The **Reading Log App** is a lightweight browser-based tool for tracking your reading progress. 
-Built with vanilla JavaScript, HTML, and CSS, it helps you organize your books without external accounts.
+## ℹ️ About
+**Readr** is a lightweight, browser-based reading log. 
+Built with vanilla JavaScript, HTML, and CSS, it helps you track your books without external accounts, sync, or setup.
 
 ---
 
-## ✅ Features (so far)
+## ✅ Features
 - Add, edit, and remove books from your log
 - Track reading progress and completion status
 - Backup and import your log with JSON
@@ -44,10 +44,16 @@ Built with vanilla JavaScript, HTML, and CSS, it helps you organize your books w
 
 --- 
 
-## 🎯 Roadmap Checklist
-- [ ] Search functionality
-- [ ] Tags/categories
-- [ ] API integration
+## 🗺️ Roadmap
+![Feature: Add/Edit](https://img.shields.io/badge/Feature-Add%2FEdit-008080.svg)
+![Feature: Backup](https://img.shields.io/badge/Feature-Backup-003366.svg)
+![Feature: LocalStorage](https://img.shields.io/badge/Feature-LocalStorage-008080.svg)
+
+![Planned: Search](https://img.shields.io/badge/Planned-Search-999999.svg)
+![Planned: Tags](https://img.shields.io/badge/Planned-Tags-777777.svg)
+![Planned: API%20Integration](https://img.shields.io/badge/Planned-API%20Integration-555555.svg)
+
+See the full [Roadmap](./docs/roadmap.md) for milestones and timelines.
 
 ---
 
@@ -70,14 +76,26 @@ Built with vanilla JavaScript, HTML, and CSS, it helps you organize your books w
 --- 
 
 ## 📸 Screenshots
-_Coming soon - preview images of the Reading Log App UI._
+_Coming soon - preview images of the Readr UI._
+
+---
+
+## 📖 Documentation
+Full project documentation is available in the [/docs](./docs/) folder:
+- [Getting Started](./docs/getting-started.md) — installation & usage
+- [Features](./docs/features.md) — current and planned features
+- [Design Decisions](./docs/design-decisions.md) — architecture choices & trade-offs
+- [Roadmap](./docs/roadmap.md) — milestones & timelines
+- [Troubleshooting](./docs/troubleshooting.md) — common issues & fixes
 
 ---
 
 ## 🤝 Contributing
 Contributions, issues, and feature requests are welcome!
-Feel free to check the [issues page](https://github.com/conorgregson/reading-log-app/issues) or open a pull request.
+- Check the [issues page](https://github.com/conorgregson/reading-log-app/issues) 
+- Open a pull request with improvements
 
+Quick start for contributors:
 1. Fork the repo
 2. Create your feature branch (`git checkout -b feature/my-feature`)
 3. Commit your changes (`git commit -m "feat: add my feature"`)
@@ -94,6 +112,6 @@ Made by Conor Gregson
 
 ---
 
-## 📄 License
+## 📜 License
 This project is licensed under the **GNU General Public License v3.0 (GPL-3.0)**.
 See the [LICENSE](./LICENSE) file for details
