@@ -43,9 +43,10 @@ As a `<type of user>`, I want `<capability>` so that `<benefit>`.
 ---
 
 ## ✅ Acceptance Criteria
-- [ ] User can ...
-- [ ] Data persists ...
-- [ ] Edge cases: ...
+List what must be true for this feature to be “done”:
+- [ ] Something happens when I do X
+- [ ] Data persists correctly
+- [ ] Error cases handled (invalid input, empty state, etc.)
 
 ---
 
