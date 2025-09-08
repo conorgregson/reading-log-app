@@ -2,8 +2,6 @@
 
 **Readr** is a minimal, offline-first reading log built for simplicity today, with a clear path to scale into a full-stack MERN app tomorrow.  
 
----
-
 **Live Demo:** https://conorgregson.github.io/reading-log-app/
 
 ---
