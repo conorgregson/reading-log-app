@@ -1,23 +1,172 @@
 <!DOCTYPE html>
-<head>
-    <link rel="stylesheet" href="styles.css">
-    <script src="app.js" defer></script>
-</head>
-<body>
-    <form>
-        <h1>Title</h1>
-        <h2>Author</h2>
-        <h3>Status</h3>
-    </form>
-    <section id="reset">
-        <button id="reset-app" type="button">Reset App</button>
-    </section>
-    <section id="backup">
-        <button id="backup-data" type="button">Backup Data</button>
-    </section>
-    <section id="import">
-        <input type="file" id="import-file" accept="application/json" hidden />
-        <button id="import-data" type="button">Import Data</button>
-    </section>
-</body>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+        <title>Readr</title>
+        <link rel="icon" type="image/png" href="favicon.png">
+        <link rel="stylesheet" href="styles.css">
+    </head>
+    <body>
+        <noscript>
+            <p class="noscript-warning">
+                Readr needs JavaScript to run. Please enable JavaScript in your browser.
+            </p>
+        </noscript>
+
+        <header id="toolbar" class="row">
+            <h1>📚 Readr</h1>
+            <div class="spacer"></div>
+            <button id="mode-toggle" type="button" aria-label="Toggle theme">Switch Mode</button>
+            <button id="backup-data" type="button">Backup Data</button>
+            <input type="file" id="import-file" accept=".json,application/json" hidden />
+            <button id="import-data" type="button" aria-controls="import-file">Import Data</button>
+            <button id="reset-data" type="button" title="Erase all books and reading sessions. Your goal and theme stay the same.">Reset Data</button>
+            <button id="reset-profile" type="button" title="Reset goal and theme to defaults. Your books and logs won't be touched.">Reset Profile</button>
+        </header>
+
+        <!-- Add a Book -->
+        <section id="add-book">
+            <h2>Add a Book</h2>
+            <form id="book-form">
+                <label class="sr-only" for="title">Title</label>
+                <input type="text" id="title" placeholder="Title" required />
+
+                <label class="sr-only" for="author">Author</label>
+                <input type="text" id="author" placeholder="Author" required /> 
+
+                <label class="sr-only" for="status">Status</label>
+                <select id="status" aria-label="Status">
+                    <option value="planned">Planned</option>
+                    <option value="reading">Reading</option>
+                    <option value="finished">Finished</option>
+                </select>
+
+                <label class="sr-only" for="plannedMonth">Planned month (TBR)</label>
+                <input type="month" id="plannedMonth" aria-label="Planned month (TBR)" />
+
+                <button type="submit">Add Book</button>
+            </form>
+        </section>
+
+        <section id="controls">
+            <h2>Search & Filters</h2>
+            <div class="row">
+                <label class="sr-only" for="search">Search</label>
+                <input id="search" type="search" placeholder="Search title, author, series, genre, ISBN." />
+                <label class="sr-only" for="sort">Sort</label>
+                <select id="sort" aria-label="Sort">
+                    <option value="createdAt:desc">Newest</option>
+                    <option value="createdAt:asc">Oldest</option>
+                    <option value="title:asc">Title A→Z</option>
+                    <option value="title:desc">Title Z→A</option>
+                    <option value="author:asc">Author A→Z</option>
+                    <option value="author:desc">Author Z→A</option>
+                    <option value="series:asc">Series A→Z</option>
+                    <option value="series:desc">Series Z→A</option>
+                </select>
+            </div>
+
+            <div class="row">
+                <label class="filter" for="f-status">Status
+                    <select id="f-status" multiple size="3">
+                        <option value="planned">Planned</option>
+                        <option value="reading">Reading</option>
+                        <option value="finished">Finished</option>
+                    </select>
+                </label>
+
+                <label class="filter" for="f-authors">Author
+                    <select id="f-authors" multiple size="4"></select>
+                </label>
+
+                <label class="filter" for="f-genres">Genre
+                    <select id="f-genres" multiple size="4"></select>
+                </label>
+
+                <label class="filter" for="f-series">Series
+                    <select id="f-series" multiple size="4"></select>
+                </label>
+            </div>
+
+            <div class="row">
+                <button id="clear-filters" type="button">Clear Filters</button>
+            </div>
+
+            <div class="row">
+                <div class="filter" id="tbr-filter">
+                    <input id="tbr-only" type="checkbox" />
+                    <span>Show only TBR for</span>
+                    <label class="sr-only" for="tbr-month">TBR month</label>
+                    <input id="tbr-month" type="month" />
+                </div>
+            </div>
+        </section>
+
+        <section id="book-list">
+            <h2>Books</h2>
+            <ul id="books"></ul>
+        </section>
+
+        <section id="goal-widget">
+            <h2 id="goal-title">Daily Goal</h2>
+            <div class="row" role="group" aria-labelledby="goal-title">
+                <label>Type
+                    <select id="goal-type">
+                        <option value="pages">Pages</option>
+                        <option value="minutes">Minutes</option>
+                    </select>   
+                </label>
+
+                <label>Value
+                    <input 
+                        id="goal-value" 
+                        type="number" 
+                        min="1" 
+                        placeholder="e.g., 20" 
+                        inputmode="numeric"
+                        required
+                        aria-required="true"
+                        />
+                </label>
+
+                <button id="save-goal" type="button">Save Goal</button>
+            </div>
+
+            <div id="today-progress">
+                <div id="today-bar"><span id="today-bar-fill"></span></div>
+                <div id="today-stats">
+                    <strong id="today-amount">0</strong> / <span id="today-goal">0</span>
+                    <span id="today-met" aria-live="polite"></span>
+                </div>
+            </div>
+
+            <div id="streaks">
+                <div>Current streak: <strong id="streak-current">0</strong> days</div>
+                <div>Max streak: <strong id="streak-max">0</strong> days</div>
+            </div>
+        </section>
+
+        <!-- Reading Log -->
+        <section id="reading-log">
+            <h2>Add Reading Session</h2>
+            <form id="log-form">
+                <label class="sr-only" for="log-book">Book</label>
+                <select id="log-book" required></select>
+
+                <label class="sr-only" for="log-pages">Pages read</label>
+                <input id="log-pages" type="number" min="0" placeholder="Pages read" />
+
+                <label class="sr-only" for="log-mins">Minutes</label>
+                <input id="log-mins" type="number" min="0" placeholder="Minutes" />
+                
+                <label class="sr-only" for="log-date">Date</label>
+                <input id="log-date" type="date" />
+                <button type="submit">Add Session</button>
+            </form>
+        </section>
+
+        <script src="storage.js"></script>
+        <script src="app.js"></script>
+    </body>
 </html>
