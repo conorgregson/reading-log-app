@@ -5,6 +5,12 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/), and
 
 ## [Unreleased]  
 
+### Docs
+- Add Live Demo links/badges to root and /docs READMEs.
+
+### Infrastructure
+- Enable GitHub Pages for live demo.
+
 ### Planned  
 - Sorting and filtering options for books  
 - Clearer error/success messages for import/export  
