@@ -4,6 +4,10 @@
 
 ---
 
+**Live Demo:** https://conorgregson.github.io/reading-log-app/
+
+---
+
 ## 🚀 What is Readr?
 - **Minimal**: Clean, distraction-free interface  
 - **Offline-first**: Current version runs fully in the browser  
@@ -21,11 +25,11 @@ See [Getting Started](Getting-Started) for details.
 ---
 
 ## 📖 Documentation
-- [Getting Started](Getting-Started)  
-- [Features](Features)  
-- [Design Decisions](Design-Decisions)  
-- [Roadmap](Roadmap)  
-- [Troubleshooting](Troubleshooting)  
+- [Getting Started](./getting-started.md)
+- [Features](./features.md)
+- [Design Decisions](./design-decisions.md)
+- [Roadmap](./roadmap.md)
+- [Troubleshooting](./troubleshooting.md)
 
 ---
 
