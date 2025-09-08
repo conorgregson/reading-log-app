@@ -13,6 +13,25 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/), and
 
 ---
 
+## [v1.0.0] — 2025-09-07
+### Added
+- Vanilla release: add/display books with localStorage persistence.
+- JSON backup & import (Download/Import).
+- Daily Goal with inline validation; color-changing progress bar (red / amber / green); streak counters.
+- Theme toggle including **System** mode with live OS sync.
+- Accessibility pass: real labels via `.sr-only`, visible `:focus-visible` outlines, and a `<noscript>` banner.
+- Search, sort, and basic multi-select filters; optional TBR month filter.
+
+### Changed
+- Date handling uses local `dayKey()` so sessions count for the correct “today.”
+- Progress bar now applies state classes to reflect goal percentage.
+
+### Fixed
+- `storage.js`: `backupAll()` keys; `downloadJSON()` anchor scope; stricter import validation.
+- `app.js`: `loadBooks()` parse typo; `computeStreaks()` logic; theme button label; `matchMedia` string; safe `render()` calls; UTC→local date mismatch; progress color toggling.
+
+---
+
 ## [v0.1.0] — 2025-09-02  
 ### Added  
 - **Core App**: Vanilla JavaScript skeleton with `index.html`, `index.js`, and `style.css`.  
