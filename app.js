@@ -1,296 +1,446 @@
-// *Genres/sub-genres*
-// F = Fantasy
-// SF = Science Fiction
-// M = Mystery
-// HF = Historial Fiction
-// CB = Graphic Novel
-// GD = Grimdark
-// CY = Cyberpunk
-// CR = Crime
-// CF = Classic Fantasy
-// UF = Urban Fantasy
-// HU = Humor
-// SP = Superpowers
-// SO = Space Opera
-// MS = Military Science Fiction
-// CL = Classics
-// AS = Asian Asthetic
-// MY = Mythology
-// R = Robots
-// V = Vampires
-// Z = Zombies
-// D = Dystopian
-// PA = Post-Apocalypse
-// A = Apocalypse
-// YA = Young Adult
-// C = Children's
-// H = Horror
-// AH = Alt History
-// HS = History
-// 
-// MA = Manga
-// SH = Shonen
-// SE = Seinen
-// IS = Isekai
-
-
-// *Function*
-// Search function
-// Add title
-// Add author
-// Add series/stand-alone
-// Add book number in series
-// Add genre
-// Date started
-// Date finished
-// Number of pages
-// Own/Borrowed
-// Physical/Digital
-// Finished
-// Number of book owned
-// Number of books read
-// Rating
-// Alphabetical order
-// Newly Added
-// Series tab
-// All books tab
-// Genre tab
-// Filter function
-// Lists number of books in genre
-// Lists number of books in series
-// Light mode/dark mode
-
-/* 
-========================================================
-Reading Log — Phase 0 Plan (expanded)
-========================================================
-
-Goal
-  - Track books & reading progress with local persistence (Phase 1).
-  - Upgrade path to React/MERN without changing core data model.
-
-Entities (stored)
-  Book {
-    id: number,                // Date.now()
-    title: string,             // required
-    author: string,            // required
-    series?: string,           // empty = standalone
-    seriesNumber?: number,
-    genre?: string,
-    pagesTotal?: number,
-    ownedOrBorrowed?: "owned" | "borrowed",
-    format?: "physical" | "digital",
-    status: "planned" | "reading" | "finished",
-    coverUrl?: string,         // or Data URL
-    isbn?: string,
-    rating?: number,           // 1–5
-    notes?: string,
-    plannedMonth?: "YYYY-MM",  // for TBR
-    startedAt?: string,        // ISO
-    finishedAt?: string,       // ISO
-    collectionIds?: string[],  // link to Collections
-    createdAt: string,         // ISO
-    updatedAt: string          // ISO
-  }
-
-  ReadingLog {
-    id: number,
-    bookId: number,
-    date: string,              // ISO (session date)
-    pagesRead?: number,
-    minutes?: number,
-    note?: string
-  }
-
-  Collection {
-    id: string,
-    name: string,
-    description?: string,
-    createdAt: string
-  }
-
-  Profile {
-    id: string,
-    displayName?: string,
-    dailyGoal?: { type: "pages" | "minutes", value: number },
-    monthlyGoal?: { month: "YYYY-MM", books?: number, pages?: number }[],
-    yearlyGoal?: { year: number, books?: number, pages?: number }[],
-    theme?: "light" | "dark" | "system"
-  }
-
-Storage (localStorage)
-  Key: "readinglog.v2"
-  Shape: { books: Book[], logs: ReadingLog[], collections: Collection[], profile: Profile }
-
-Computed (derive at render time; do NOT store)
-  - Book progress: sum(log.pagesRead) → percent, pagesLeft, ETA
-  - Streaks/goals: current & max streak from daily totals
-  - Profile rollups: totals (owned/borrowed/read/pages), best reads per year
-  - Max pages/day & per year; max books per year
-  - Series & genre summaries: counts by group
-
-MVP Features (Phase 1)
-  - Add/Delete book; status update (planned/reading/finished)
-  - Search: title/author/series/genre/isbn (case-insensitive)
-  - Filters: author/genre/series/status/ownedOrBorrowed/format
-  - Sort: title A↕, createdAt new↕, author A↕, series A↕
-  - Reading logs: add session (pages or minutes); default date = today
-  - Progress bar, % read, pages left (computed)
-  - Daily goal indicator; light/dark theme; responsive layout
-  - TBR month view; optional cover upload (URL or Data URL)
-
-Nice-to-have (Phase 1.1)
-  - Multi-select filters, clear-all, confirm delete + undo
-  - Series/Genres grouped views with counts
-  - Export/Import JSON, keyboard shortcuts, a11y pass
-  - Badges (computed only)
-
-Future
-  - Phase 2: React + Tailwind; goal calendar
-  - Phase 3: MERN API + auth; import from localStorage
+/*
+  Readr v1.0 - vanilla JS
+  Patched to fix missing IDs, storage helpers, theme toggle streaks, and guarded listeners.
 */
 
-// Storage keys (v1 skeleton)
+// ------------------------
+// Storage Keys
+// ------------------------
 const BOOKS_KEY = "readinglog.v1";
-
-// Future keys (Session 3+, safe to define now)
 const LOGS_KEY = "readinglog.logs.v1";
 const PROFILE_KEY = "readinglog.profile.v1";
-const COLLECTIONS_KEY = "readinglog.collections.v1";
 
-document.getElementById("reset-app").addEventListener("click", () => {
-  if (!confirm("This will erase all the books and logs. Continue?")) 
-    return;
+// ------------------------
+// App State
+// ------------------------
+let books = [];
+let logs = [];
+let profile = {
+  id: "me", 
+  dailyGoal: null,
+  theme: "system"
+};
+const ui = { filters: {} };
 
-  // Quick backup to console before wiping
+// -----------------------
+// Storage Helpers
+// -----------------------
+function loadBooks() {
   try {
-    const backup = {
-      books: JSON.parse(localStorage.getItem(BOOKS_KEY) || "[]"),
-      logs: JSON.parse(localStorage.getItem(LOGS_KEY) || "[]"),
-      profile: JSON.parse(localStorage.getItem(PROFILE_KEY) || "{}"),
-      collections:JSON.parse(localStorage.getItem(COLLECTIONS_KEY) || "[]"),
-      exportedAt: new Date().toISOString()
-    };
-    console.log("Reading Log backup →", backup);
-  } catch {}
+    books = JSON.parse(localStorage.getItem(BOOKS_KEY)) || [];
+  } catch {
+    books = [];
+  }
+}
+function saveBooks() {
+  localStorage.setItem(BOOKS_KEY, JSON.stringify(books));
+}
 
-  // Remove all known keys (safe even if they don't exist yet)
-  localStorage.removeItem(BOOKS_KEY);
-  localStorage.removeItem(LOGS_KEY);
-  localStorage.removeItem(PROFILE_KEY);
-  localStorage.removeItem(COLLECTIONS_KEY);
-
-  // Reset in-memory state
-  books = [];
-  // Only if you've added these later:
-  if (typeof logs !== "undefined") {
+function loadLogs() {
+  try {
+    logs = JSON.parse(localStorage.getItem(LOGS_KEY)) || [];
+  } catch {
     logs = [];
   }
-  if (typeof profile !== "undefined") {
-    profile = { id: "me", dailyGoal: null, theme: "system "};
-  }
+}
+function saveLogs() {
+  localStorage.setItem(LOGS_KEY, JSON.stringify(logs));
+}
 
-  // Re-render UI
-  if (typeof buildFilterOptions === "function") {
-    buildFilterOptions();
-  }
-  if (typeof buildBookOptions === "function") {
-    buildBookOptions();
-  }
-  if (typeof updateGoalUI === "function") {
-    updateGoalUI();
-  }
-  // Use your central render() if you have it, else renderBooks()
-  if (typeof render === "function") {
-    render();
-  } else if (typeof renderBooks === "function") {
-    renderBooks([]);
-  }
-});
-
-// Backup Data
-document.getElementById("backup-data").addEventListener("click", () => {
-  const backup = {
-      books: JSON.parse(localStorage.getItem(BOOKS_KEY) || "[]"),
-      logs: JSON.parse(localStorage.getItem(LOGS_KEY) || "[]"),
-      profile: JSON.parse(localStorage.getItem(PROFILE_KEY) || "{}"),
-      collections:JSON.parse(localStorage.getItem(COLLECTIONS_KEY) || "[]"),
-      exportedAt: new Date().toISOString()
-  };
-  const blob = new Blob([JSON.stringify(backup, null, 2)], { type: "application/json" });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement("a");
-  a.href = url;
-  a.download = "readinglog-backup.json";
-  a.click();
-  URL.revokeObjectURL(url);
-});
-
-// Import Data
-document.getElementById("import-data").addEventListener("click", () => {
-  document.getElementById("import-file").click(); // Trigger file picker
-});
-
-document.getElementById("import-file").addEventListener("change", async (e) => {
-  const file = e.target.files[0];
-  if (!file) {
-    return;
-  }
-
+function loadProfile() {
   try {
-    const text = await file.text();
-    const data = JSON.parse(text);
+    const raw = localStorage.getItem(PROFILE_KEY);
+    if (raw) {
+      profile = JSON.parse(raw);
+    }
+  } catch {
+    /* keep defaults */
+  }
+}
+function saveProfile() {
+  localStorage.setItem(PROFILE_KEY, JSON.stringify(profile));
+}
 
-    if (!confirm("Importing will overwrite existing books/logs/profile. Continue?")) {
+// -----------------------
+// Data Helpers
+// -----------------------
+function dayKey(date = new Date()) {
+  const dayStart = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+  return dayStart.toISOString().slice(0, 10); // YYYY-MM-DD
+}
+function monthKey(date = new Date()) {
+  return date.toISOString().slice(0, 7); // "YYYY-MM"
+}
+
+// -----------------------
+// Aggregation & Streaks
+// -----------------------
+
+// Aggregates per day across all days
+function aggregateByDay(items = [], metric = "pages") {
+  const totalsByDay = new Map(); // key: YYYY-MM-DD -> number
+  const useMinutes = metric === "minutes";
+
+  for (const item of items) {
+    if (!item?.date) {
+      continue;
+    }
+    
+    const day = typeof item.date === "string"
+      ? item.date.slice(0, 10)
+      : dayKey(new Date(item.date));
+
+    const amount = Number(useMinutes ? item?.minutes : item?.pagesRead) || 0;
+    if (amount === 0) {
+      continue;       // ignore no-op entries
+    }
+
+    totalsByDay.set(day, (totalsByDay.get(day) || 0) + amount);
+  };
+
+  return totalsByDay;
+}
+
+function computeStreaks(goalMap, goalValue) {
+  // goalMap: Map(YYYY-MM-DD -> amount)
+  // Count consecutive days up to TODAY with amount >= goalValue
+  const today = new Date();
+  let current = 0, max = 0, run = 0;
+  let inLeadingSegment = true;
+
+  // Check a rolling window (e.g., past 400 days)
+  for (let i = 0; i < 400; i++) {
+    const day = new Date(today);
+    day.setDate(today.getDate() - i);
+    const key = dayKey(day);
+    const met = (goalMap.get(key) || 0) >= goalValue;
+
+    if (met) {
+      run++;
+      if (inLeadingSegment) current = run; // current streak only for leading segment
+      if (run > max) max = run;
+    } else {
+      inLeadingSegment = false; // after first miss from today, current is finalized
+      run = 0;
+    }
+  }
+
+  return { current, max };
+}
+
+// -----------------------
+// Theme (light/dark/system with live OS sync)
+// -----------------------
+const body = document.body;
+const media = window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)");
+if (media && !media.addEventListener && media.addListener) {
+  media.addListener(() => {
+    if (themeMode === "system") {
+      applyAppearance("system");
+    }
+  });
+}
+let themeMode = localStorage.getItem("themeMode") || "system"; // "light" | "dark" | "system"
+applyAppearance(themeMode);
+
+// Resolve "system" to actual mode
+function getEffectiveMode(mode = themeMode) {
+  if (mode === "system") {
+    return media && media.matches ? "dark" : "light";
+  }
+  return mode;
+}
+function applyAppearance(mode) {
+  const effective = getEffectiveMode(mode);
+  body.classList.remove("mode-light", "mode-dark");
+  body.classList.add(effective === "dark" ? "mode-dark" : "mode-light");
+  
+  const modeBtnLocal = document.getElementById("mode-toggle");
+  if (modeBtnLocal) {
+    // Show what you'll switch to
+    const next = nextThemeMode(themeMode);
+    modeBtnLocal.textContent = 
+      next === "light" ? "Switch to Light"
+      : next === "dark" ?  "Switch to Dark"
+      : "Switch to System";
+      modeBtnLocal.setAttribute("aria-label", `Theme: ${themeMode} (click to change)`);
+  }
+}
+function nextThemeMode(current) {
+  return current === "light" ? "dark" : current === "dark" ? "system" : "light";
+}
+
+// live update when OS theme changes and we're in "system"
+if (media && media.addEventListener) {
+  media.addEventListener("change", () => {
+    if (themeMode === "system") {
+      applyAppearance("system");
+    }
+  });
+}
+
+const modeBtn = document.getElementById("mode-toggle");
+if (modeBtn) {
+  modeBtn.addEventListener("click", () => {
+    themeMode = nextThemeMode(themeMode);
+    localStorage.setItem("themeMode", themeMode);
+    applyAppearance(themeMode);
+  });
+}
+
+// -----------------------
+// UI Wiring
+// -----------------------
+const bookForm = document.getElementById("book-form");
+if (bookForm) {
+  bookForm.addEventListener("submit", (e) => {
+    e.preventDefault();
+    const title = document.getElementById("title").value.trim();
+    const author = document.getElementById("author").value.trim();
+    const status = document.getElementById("status").value;
+    const plannedMonth = document.getElementById("plannedMonth")?.value || undefined;
+    if (!title || !author) {
       return;
     }
 
-    // Replace localStorage with imported data (only if kes exist)
-    if (data.books) {
-      localStorage.setItem(BOOKS_KEY, JSON.stringify(data.books));
+    const now = new Date().toISOString();
+    books.push({
+      id: Date.now(),
+      title, 
+      author, 
+      status,
+      plannedMonth,    
+      createdAt: now, 
+      updatedAt: now
+    });
+    saveBooks();
+    buildBookOptions();    // keep log form in sync
+    if (typeof window.render === "function") {
+      window.render();
     }
-    if (data.logs) {
-      localStorage.setItem(LOGS_KEY, JSON.stringify(data.logs));
-    }
-    if (data.profile) {
-      localStorage.setItem(PROFILE_KEY, JSON.stringify(data.profile));
-    }
-    if (data.collections) {
-      localStorage.setItem(COLLECTIONS_KEY, JSON.stringify(data.collections));
+    e.target.reset();
+  }); 
+}
+
+// Populate the book dropdown
+function buildBookOptions() {
+  const select = document.getElementById("log-book");
+  if (!select) {
+    return;
+  }
+
+  select.innerHTML = "";
+  books.forEach((book) => {
+    const opt = document.createElement("option");
+    opt.value = String(book.id);
+    opt.textContent = `${book.title} - ${book.author}`;
+    select.appendChild(opt);
+  });
+}
+
+// Handle "Add Session"
+const logForm = document.getElementById("log-form");
+if (logForm) {
+  logForm.addEventListener("submit", (e) => {
+    e.preventDefault();
+    const bookId = +document.getElementById("log-book").value;
+    const pages = document.getElementById("log-pages").value;
+    const mins = document.getElementById("log-mins").value;
+    const dateEl = document.getElementById("log-date");
+    const date = dateEl?.value || dayKey();
+    if (!bookId) {
+      return;
     }
 
-    // Reload in-memory state
-    if (typeof loadBooks === "function") {
-      loadBooks();
-    }
-    if (typeof loadLogs === "function") {
-      loadLogs();
-    }
-    if (typeof loadProfile == "function") {
-      loadProfile();
+    logs.push({
+      id: Date.now(),
+      bookId,
+      date, // "YYYY-MM-DD"
+      pagesRead: pages ? +pages : undefined,
+      minutes: mins ? +mins : undefined
+    });
+    saveLogs();
+
+    // If pages were logged and book is "planned", bump to "reading"
+    const i = books.findIndex((book) => book.id === bookId);
+    if (i !== -1 && books[i].status === "planned") {
+      books[i].status = "reading";
+      books[i].updatedAt = new Date().toISOString();
+      if (!books[i].startedAt) {
+        books[i].startedAt = new Date().toISOString();
+      }
+      saveBooks();
     }
 
-    // Refresh UI
-    if (typeof buildFilterOptions === "function") {
-      buildFilterOptions();
-    } 
-    if (typeof buildBookOptions === "function") {
+    // Reset form & refresh UI
+    e.target.reset();
+    // default date back to today
+    if (dateEl) {
+      dateEl.value = dayKey(); // keep it on local 'today'
+    }
+    updateGoalUI();
+    if (typeof window.render === "function") {
+      window.render();
+    }
+  });
+}
+
+// Save goal & reset buttons
+const saveGoalBtn = document.getElementById("save-goal");
+if (saveGoalBtn) {
+  saveGoalBtn.addEventListener("click", () => {
+    const type = document.getElementById("goal-type").value;
+    const input = document.getElementById("goal-value");
+    const raw = +input.value;
+    let err = document.getElementById("goal-error")
+
+    if (!err) {
+      err = document.createElement("div");
+      err.id = "goal-error";
+      err.className = "error-text";
+      err.setAttribute("role", "alert");
+      document.getElementById("goal-value").parentElement.appendChild(err);
+    }
+
+    if (!Number.isFinite(raw) || raw < 1) {
+      err.textContent = "Please enter a number ≥ 1.";
+      input.focus();
+      return;
+    }
+
+    err.textContent = "";
+    const value = Math.max(1, raw);
+    profile.dailyGoal = { type, value };
+    saveProfile();
+    updateGoalUI();
+  });
+}
+
+const resetBtn = document.getElementById("reset-data")
+if (resetBtn) {
+  resetBtn.addEventListener("click", () => {
+    if (confirm("This will erase all books and logs. Are you sure?")) {
+      localStorage.removeItem(BOOKS_KEY);
+      localStorage.removeItem(LOGS_KEY);
+      books = [];
+      logs = [];
+      saveBooks();
+      saveLogs();
       buildBookOptions();
-    }
-    if (typeof updateGoalUI === "function") {
+      if (typeof window.render === "function") {
+        window.render();
+      }
       updateGoalUI();
     }
-    if (typeof render === "function") {
-      render();
-    } else if (typeof renderBooks === "function") {
-      renderBooks(books);
-    }
+  });
+}
 
-    alert("Import successful!");
-  } catch (error) {
-    console.error("Import failed:", error);
-    alert("invalid JSON file. Could not import.");
-  } finally {
-    e.target.value = ""; // reset file input
+const resetProfileBtn = document.getElementById("reset-profile");
+if (resetProfileBtn) {
+  resetProfileBtn.addEventListener("click", () => {
+    if (confirm("Reset profile settings (goal & theme)?")) {
+      localStorage.removeItem("readinglog.profile.v1"); // PROFILE_KEY
+      localStorage.removeItem("themeMode");
+      profile = { 
+        id: "me", 
+        dailyGoal: null, 
+        theme: "system" 
+      };
+      themeMode = "system";
+      applyAppearance(themeMode);
+      updateGoalUI();
+      alert("Profile reset.");
+    }
+  });
+}
+
+// Render goal UI
+function updateGoalUI() {
+  const amountEl = document.getElementById("today-amount");
+  const goalEl = document.getElementById("today-goal");
+  const metEl = document.getElementById("today-met");
+  const barFill = document.getElementById("today-bar-fill");
+  const sCur = document.getElementById("streak-current");
+  const sMax = document.getElementById("streak-max");
+  if (!amountEl || !goalEl || !barFill || !sCur || !sMax) {
+    return;
   }
-});
+
+  if (!profile.dailyGoal) {
+    amountEl.textContent = "0";
+    goalEl.textContent = "0";
+    metEl.textContent = "(set a goal)";
+    barFill.classList.remove("success", "warning", "error", "zero");
+    barFill.style.width = "0%";
+    sCur.textContent = "0";
+    sMax.textContent = "0";
+    return;
+  }
+
+  const type = profile.dailyGoal.type;
+  const value = profile.dailyGoal.value;
+
+  // Ensure today's default data in the log form
+  const dateEl = document.getElementById("log-date");
+  if (dateEl && !dateEl.value) {
+    dateEl.value = dayKey(); // local YYYY-MM-DD
+  }
+
+  const totals = aggregateByDay(logs, type === "minutes" ? "minutes" : "pages");
+  const todayAmount = totals.get(dayKey()) || 0;
+
+  amountEl.textContent = String(todayAmount);
+  goalEl.textContent = String(value);
+  const percent = Math.max(0, Math.min(1, todayAmount / value));
+  // width
+  barFill.style.width = (percent * 100).toFixed(0) + "%";
+  // color + zero-width hint
+  barFill.classList.remove("success", "warning", "error");
+  
+  if (percent >= 1) {
+    barFill.classList.add("success");
+  } else if (percent >= 0.5) {
+    barFill.classList.add("warning");
+  } else if (percent > 0) {
+    barFill.classList.add("error");
+  } else {
+    // exactly 0% → still mark error and add a tiny sliver
+    barFill.classList.add("error", "zero");
+  }
+
+  metEl.textContent = todayAmount >= value ? "✅ Goal met today!" : "—";
+
+  // Streaks
+  const { current, max } = computeStreaks(totals, value);
+  sCur.textContent = String(current);
+  sMax.textContent = String(max);
+
+  // Set the goal type placeholder for inputs
+  const pagesEl = document.getElementById("log-pages");
+  const minsEl = document.getElementById("log-mins");
+  if (pagesEl) {
+    pagesEl.placeholder = type === "pages" ? "Pages read" : "Pages (optional)";
+  }
+  if (minsEl) {
+    minsEl.placeholder = type === "minutes" ? "Minutes read" : "Minutes (optional)";
+  }
+}
+
+// -----------------------
+// Init
+// -----------------------
+loadBooks();      
+loadLogs();
+loadProfile();
+buildBookOptions();       // to populate the log form
+updateGoalUI();
+
+if (typeof buildFilterOptions === "function") {
+  buildFilterOptions();   // existing filters (author/genre/series)
+}
+if (typeof attachControlEvents === "function") {
+  attachControlEvents();  // existing + (already extended with TBR events)
+}
+if (typeof render === "function") {
+  render();               // lists with search/filters/sort
+}
