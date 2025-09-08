@@ -3,11 +3,18 @@
 [![License: GPL v3](https://img.shields.io/badge/License-GPLv3-008080.svg)](./LICENSE)
 ![Made with JavaScript](https://img.shields.io/badge/Made%20with-JavaScript-003366.svg)
 ![Docs](https://img.shields.io/badge/Docs-Available-008080.svg)
-
+[![Live Demo](https://img.shields.io/badge/demo-online-brightgreen)](https://conorgregson.github.io/reading-log-app/)
 
 Minimal, offline-first reading log with JSON backup/import, security policy, and contributor-friendly docs.
 
 🔗 **[Full Documentation →](./docs/)**
+
+---
+
+## Live Demo
+**▶ Try it now:** https://conorgregson.github.io/reading-log-app/
+
+> Data is saved locally in your browser via `localStorage` and is separate from your local dev data.
 
 ---
 
