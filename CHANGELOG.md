@@ -19,7 +19,7 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/), and
 
 ---
 
-## [1.1.0] - 2025-09-08
+## [v1.1.0] - 2025-09-08
 ### Added
 - Genre field for books, with a datalist so you can pick from existing genres or type a new one. 
 - Search that matches across title, author, **series**, genre, and ISBN.
