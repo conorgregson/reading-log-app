@@ -35,6 +35,10 @@
                 <label class="sr-only" for="author">Author</label>
                 <input type="text" id="author" placeholder="Author" required /> 
 
+                <label class="sr-ony" for="genre"></label>
+                <input type="text" id="genre" placeholder="Genre" list="genre-options" />
+                <datalist id="genre-options"></datalist>
+
                 <label class="sr-only" for="status">Status</label>
                 <select id="status" aria-label="Status">
                     <option value="planned">Planned</option>
@@ -144,6 +148,24 @@
             <div id="streaks">
                 <div>Current streak: <strong id="streak-current">0</strong> days</div>
                 <div>Max streak: <strong id="streak-max">0</strong> days</div>
+            </div>
+        </section>
+
+        <section id="book-goals">
+            <h2>Book Goals</h2>
+            <div class="row" role="group" aria-labelledby="book-goals">
+                <label>Monthly target
+                    <input id="goal-monthly-books" type="number" min="0" placeholder="e.g., 2" />
+                </label>
+                <label> Yearly target
+                    <input id="goal-yearly-books" type="number" min="0" placeholder="e.g., 20" />
+                </label>
+                <button id="save-book-goals" type="button">Save Book Goals</button>
+            </div>
+
+            <div class="row" id="book-goals-stats">
+                <div>This month: <strong id="books-finished-month">0</strong> / <span id="books-goal-month">0</span></div>
+                <div>This year: <strong id="books-finished-year">0</strong> / <span id="books-goal-year">0</span></div>
             </div>
         </section>
 
