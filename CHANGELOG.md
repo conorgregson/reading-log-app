@@ -9,7 +9,35 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/), and
 - Add Live Demo links/badges to root and /docs READMEs.
 
 ### Infrastructure
-- Enable GitHub Pages for live demo. 
+- Enable GitHub Pages for live demo.
+
+### Planned  
+- Sorting and filtering options for books  
+- Clearer error/success messages for import/export  
+- Expanded sample seed data  
+- Small UI fixes (spacing, accessibility, consistency)  
+
+---
+
+## [1.1.0] - 2025-09-08
+### Added
+- Genre field for books, with a datalist so you can pick from existing genres or type a new one. 
+- Search that matches across title, author, **series**, genre, and ISBN.
+- Multi-select filters for Status, Author, Genre, and Series.
+- Book-count goals: set monthly and yearly targets; progress updates when you mark a book as finished.
+- “Mark Finished” action on each book entry.
+
+### Changed
+- Sorting now defaults to `Newest` (`createdAt:desc`) and supports Title/Author/Series ascending/descending.
+- UI lists rebuild immediately on search, filter, sort, and TBR controls.
+
+### Fixed
+- Option builders for Author/Genre/Series are generated from current books without duplicates.
+- Corrected data attributes for list actions (`data-delete`, `data-finish`) so buttons behave reliably.
+- Cleaned up init to avoid duplicate event listeners.
+
+### Notes
+- Backup/Import remains compatible; new fields like `genre`, `finishedAt`, and `bookGoals` are stored in the existing keys.
 
 ---
 
