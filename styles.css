@@ -235,6 +235,20 @@ li {
     gap: 1rem; 
 }
 
+#book-list .finish-btn {
+    background: var(--progress-success);
+}
+#book-list .finish-btn:hover {
+    filter: brightness(0.95);
+}
+#book-goals {
+    background: var(--card-bg);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 0.75rem;
+    margin: 1rem 0;
+}
+
 #log-form { 
     display: flex;
     flex-wrap: wrap;
