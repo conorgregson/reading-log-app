@@ -18,7 +18,8 @@ let logs = [];
 let profile = {
   id: "me", 
   dailyGoal: null,
-  theme: "system"
+  theme: "system",
+  bookGoals: { monthly: 0, yearly: 0 }
 };
 const ui = { filters: {} };
 
@@ -70,6 +71,15 @@ function dayKey(date = new Date()) {
 }
 function monthKey(date = new Date()) {
   return date.toISOString().slice(0, 7); // "YYYY-MM"
+}
+
+function isSameMonth(date, ref = new Date()) {
+  const x = new Date(date);
+  return x.getFullYear() === ref.getFullYear() && x.getMonth() === ref.getMonth();
+}
+function isSameYear(date, ref = new Date()) {
+  const x = new Date(date);
+  return x.getFullYear() === ref.getFullYear();
 }
 
 // -----------------------
@@ -197,6 +207,7 @@ if (bookForm) {
     e.preventDefault();
     const title = document.getElementById("title").value.trim();
     const author = document.getElementById("author").value.trim();
+    const genre = document.getElementById("genre")?.value.trim() || "";
     const status = document.getElementById("status").value;
     const plannedMonth = document.getElementById("plannedMonth")?.value || undefined;
     if (!title || !author) {
@@ -207,11 +218,13 @@ if (bookForm) {
     books.push({
       id: Date.now(),
       title, 
-      author, 
+      author,
+      genre, 
       status,
       plannedMonth,    
       createdAt: now, 
-      updatedAt: now
+      updatedAt: now,
+      ...(status === "finished" ? { finishedAt: now } : {})
     });
     saveBooks();
     buildBookOptions();    // keep log form in sync
@@ -236,6 +249,97 @@ function buildBookOptions() {
     opt.textContent = `${book.title} - ${book.author}`;
     select.appendChild(opt);
   });
+}
+
+// -----------------------
+// Filters/Search/Sort wiring
+// -----------------------
+
+function uniqueSorted(values) {
+  return Array.from(new Set(values.filter(Boolean))).sort((a,b) => a.localeCompare(b));
+}
+
+function buildFilterOptions() {
+  // Authors
+  const authors = uniqueSorted(books.map(book => book.author));
+  const fa = document.getElementById("f-authors");
+  if (fa) {
+    fa.innerHTML = "";
+    authors.forEach(author => {
+      const option = document.createElement("option");
+      option.value = author;
+      option.textContent = author;
+      fa.appendChild(option);
+    });
+  }
+  // Genres
+  const genres = uniqueSorted(books.map(book => book.genre));
+  const fg = document.getElementById("f-genres");
+  if (fg) {
+    fg.innerHTML = "";
+    genres.forEach(genre => {
+      const option = document.createElement("option");
+      option.value = genre;
+      option.textContent = genre;
+      fg.appendChild(option);
+    });
+  }
+  // Datalist for Add Book
+  const gdl = document.getElementById("genre-options");
+  if (gdl) {
+    gdl.innerHTML = "";
+    genres.forEach(genre => {
+      const option = document.createElement("option");
+      option.value = genre;
+      gdl.appendChild(option);
+    });
+  }
+  // Series
+  const series = uniqueSorted(books.map(book => book.series));
+  const fs = document.getElementById("f-series");
+  if (fs) {
+    fs.innerHTML = "";
+    series.forEach(s => {
+      const option = document.createElement("option");
+      option.value = s;
+      option.textContent = s;
+      fs.appendChild(option);
+    });
+  }
+}
+
+function attachControlEvents() {
+  const searchEl = document.getElementById("search");
+  const sortEl = document.getElementById("sort");
+  const statusEl = document.getElementById("f-status");
+  const fa = document.getElementById("f-authors");
+  const fg = document.getElementById("f-genres");
+  const fs = document.getElementById("f-series");
+  const clearBtn = document.getElementById("clear-filters");
+  const tbrOnly = document.getElementById("tbr-only");
+  const tbrMonth = document.getElementById("tbr-month");
+
+  function refreshList() { 
+    if (typeof render === "function") window.render(); 
+  }
+
+  [searchEl, sortEl, statusEl, fa, fg, fs, tbrOnly, tbrMonth].forEach(el => {
+    if (!el) return;
+    const evt = el.tagName === "INPUT" ? "input" : "change";
+    el.addEventListener(evt, refreshList);
+  });
+
+  if (clearBtn) {
+    clearBtn.addEventListener("click", () => {
+      if (searchEl) searchEl.value = "";
+      [statusEl, fa, fg, fs].forEach(sel => {
+        sel && Array.from(sel.options).forEach(option => option.selected = false)
+      });
+      if (tbrOnly) tbrOnly.checked = false;
+      if (tbrMonth) tbrMonth.value = "";
+      refreshList();
+    });
+  }
 }
 
 // Handle "Add Session"
@@ -313,6 +417,17 @@ if (saveGoalBtn) {
     profile.dailyGoal = { type, value };
     saveProfile();
     updateGoalUI();
+  });
+}
+
+const saveBookGoalsBtn = document.getElementById("save-book-goals");
+if (saveBookGoalsBtn) {
+  saveBookGoalsBtn.addEventListener("click", () => {
+    const m = Math.max(0, +document.getElementById("goal-monthly-books").value || 0);
+    const y = Math.max(0, +document.getElementById("goal-yearly-books").value || 0);
+    profile.bookGoals = { monthly: m, yearly: y };
+    saveProfile();
+    updateBookGoalsUI();
   });
 }
 
@@ -426,21 +541,163 @@ function updateGoalUI() {
   }
 }
 
+function countFinishedThisMonth() {
+  return books.filter(book => book.status === "finished" && book.finishedAt && isSameMonth(book.finishedAt)).length;
+}
+function countFinishedThisYear() {
+  return books.filter(book => book.status === "finished" && book.finishedAt && isSameYear(book.finishedAt)).length;
+}
+function updateBookGoalsUI() {
+  const monthDoneEl = document.getElementById("books-finished-month");
+  const monthGoalEl = document.getElementById("books-goal-month");
+  const yearDoneEl = document.getElementById("books-finished-year");
+  const yearGoalEl = document.getElementById("books-goal-year");
+  if (!monthDoneEl || !monthGoalEl || !yearDoneEl || !yearGoalEl) {
+    return;
+  }
+
+  const monthDone = countFinishedThisMonth();
+  const yearDone = countFinishedThisYear();
+  const monthGoal = Number(profile?.bookGoals?.monthly || 0);
+  const yearGoal = Number(profile?.bookGoals?.yearly || 0);
+
+  monthDoneEl.textContent = String(monthDone);
+  monthGoalEl.textContent = String(monthGoal);
+  yearDoneEl.textContent = String(yearDone);
+  yearGoalEl.textContent = String(yearGoal);
+}
+
+function getMultiSelectValues(selectEl) {
+  if (!selectEl) {
+    return [];
+  }
+  return Array.from(selectEl.selectedOptions).map(option => option.value);
+}
+
+function render() {
+  const list = document.getElementById("books");
+  if (!list) {
+    return;
+  }
+  list.innerHTML = "";
+
+  const query = (document.getElementById("search")?.value || "").toLowerCase().trim();
+  const sort = document.getElementById("sort")?.value || "createdAt:desc";
+  const fStatus = getMultiSelectValues(document.getElementById("f-status"));
+  const fAuthors = getMultiSelectValues(document.getElementById("f-authors"));
+  const fGenres = getMultiSelectValues(document.getElementById("f-genres"));
+  const fSeries = getMultiSelectValues(document.getElementById("f-series"));
+  const tbrOnly = !!document.getElementById("tbr-only")?.checked;
+  const tbrMonth = document.getElementById("tbr-month")?.value || "";
+
+  // Filter
+  let rows = books.filter(book => {
+    if (query) {
+      const searchText = [
+        book.title, book.author, book.series, book.genre, book.isbn
+      ].filter(Boolean).join(" ").toLowerCase();
+      if (!searchText.includes(query)) return false;
+    }
+    if (fStatus.length && !fStatus.includes(book.status)) return false;
+    if (fAuthors.length && !fAuthors.includes(book.author)) return false;
+    if (fGenres.length && !fGenres.includes(book.genre)) return false;
+    if (fSeries.length && !fSeries.includes(book.series)) return false;
+
+    if (tbrOnly) {
+      if (!book.plannedMonth) return false;
+      if (tbrMonth && book.plannedMonth !== tbrMonth) return false;
+    }
+    return true;
+  });
+
+  // Sort 
+  const [key, dir] = sort.split(":"); // e.g. "title:asc"
+  rows.sort((a, b) => {
+    let aVal = (a[key] ?? "").toString().toLowerCase();
+    let bVal = (b[key] ?? "").toString().toLowerCase();
+    if (key === "createdAt") {
+      aVal = a.createdAt;
+      bVal = b.createdAt;
+    }
+    if (aVal < bVal) {
+      return dir === "asc" ? -1 : 1;
+    }
+    if (aVal > bVal) {
+      return dir === "asc" ? 1 : -1;
+    }
+    return 0;
+  });
+
+  // Render list
+  for (const book of rows) {
+    const li = document.createElement("li");
+    const meta = [
+      book.author && `<em>${book.author}</em>`,
+      book.series && `<span>Series: ${book.series}</span>`,
+      book.genre && `<span>Genre: ${book.genre}</span>`,
+      book.status && `<span>Status: ${book.status}</span>`,
+      book.plannedMonth && `<span>TBR: ${book.plannedMonth}</span>`,
+    ].filter(Boolean).join(" • ");
+
+    li.innerHTML = `
+      <div class="row" style="justify-content:space-between;align-items:center;">
+        <div>
+          <strong>${book.title}</strong><br />
+          <small>${meta}</small>
+        </div>
+        <div class="row">
+          ${book.status !== "finished" ? `<button data-finish="${book.id}" class="finish-btn">Mark Finished</button>` : ""}
+          <button data-delete="${book.id}" class="delete">Delete</button>
+        </div>
+      </div>
+    `;
+    list.appendChild(li);
+  }
+
+  // Wire Actions
+  list.querySelectorAll("[data-delete]").forEach(btn => {
+    btn.addEventListener("click", () => {
+      const id = +btn.getAttribute("data-delete");
+      const i = books.findIndex(book => book.id === id);
+      if (i !== -1) {
+        books.splice(i, 1);
+        saveBooks();
+        buildBookOptions();
+        buildFilterOptions();
+        render();
+        updateBookGoalsUI();
+      }
+    });
+  });
+  list.querySelectorAll("[data-finish]").forEach(btn => {
+    btn.addEventListener("click", () => {
+      const id = +btn.getAttribute("data-finish");
+      const i = books.findIndex(book => book.id === id);
+      if (i !== -1) {
+        books[i].status = "finished";
+        books[i].finishedAt = new Date().toISOString();
+        books[i].updatedAt = new Date().toISOString();
+        saveBooks();
+        buildFilterOptions();
+        render();
+        updateBookGoalsUI()
+      }
+    });
+  });
+}
+
 // -----------------------
 // Init
 // -----------------------
 loadBooks();      
 loadLogs();
 loadProfile();
-buildBookOptions();       // to populate the log form
-updateGoalUI();
 
-if (typeof buildFilterOptions === "function") {
-  buildFilterOptions();   // existing filters (author/genre/series)
-}
-if (typeof attachControlEvents === "function") {
-  attachControlEvents();  // existing + (already extended with TBR events)
-}
-if (typeof render === "function") {
-  render();               // lists with search/filters/sort
-}
+buildBookOptions();       // to populate the log form
+buildFilterOptions();
+attachControlEvents();
+
+updateGoalUI();
+updateBookGoalsUI();
+
+render();
