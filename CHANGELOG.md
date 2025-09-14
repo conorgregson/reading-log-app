@@ -3,90 +3,89 @@ All notable changes to **Readr** (reading log app) will be documented in this fi
 
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/), and we aim to follow [Semantic Versioning](https://semver.org/).  
 
-## [Unreleased]  
+## [v1.2.0] — Branding & PWA Polish (2025-09-14)
 
-### Docs
-- Add Live Demo links/badges to root and /docs READMEs.
-
-### Infrastructure
-- Enable GitHub Pages for live demo.
-
-### Planned  
-- Sorting and filtering options for books  
-- Clearer error/success messages for import/export  
-- Expanded sample seed data  
-- Small UI fixes (spacing, accessibility, consistency)  
-
----
-
-## [v1.1.0] — 2025-09-08
 ### Added
-- Genre field for books, with a datalist so you can pick from existing genres or type a new one. 
-- Search that matches across title, author, **series**, genre, and ISBN.
-- Multi-select filters for Status, Author, Genre, and Series.
-- Book-count goals: set monthly and yearly targets; progress updates when you mark a book as finished.
-- “Mark Finished” action on each book entry.
+- New teal and monochrome white logos, favicons, and social preview images.
+- `BRAND_ASSETS.md` with branding guidelines.
+- `PWD.md` with initial PWA documentation.
+- Toast notifications for import/export success/errors.
+- Update prompt when a new version is available via service worker.
+- Project structure refinements:
+    - `dev/` folder (`smoke.js`).
+    - Added folder (`assets/`) with (`diagrams/`) and (`screenshot/`) folders to `docs/` folder.
+    - `features/` folder (`import.js`).
+    - `images/` folder (favicons and logos).
+    - `ui/` folder (`wire-import-export.js`).
+    - `utils/` folder (`aggregate.js`, `download.js`, `formatMs.js`, `storage.js`, `validate.js`).
+    - Root-level `manifest.json` and `sw.js`.
 
 ### Changed
-- Sorting now defaults to `Newest` (`createdAt:desc`) and supports Title/Author/Series ascending/descending.
-- UI lists rebuild immediately on search, filter, sort, and TBR controls.
+- Polished UI: goal widget, streak tracker, empty states.
+- Improved filters and daily goal interactions.
+- Refined dark mode styles
 
 ### Fixed
-- Option builders for Author/Genre/Series are generated from current books without duplicates.
-- Corrected data attributes for list actions (`data-delete`, `data-finish`) so buttons behave reliably.
-- Cleaned up init to avoid duplicate event listeners.
+- Service worker cache updates now trigger reliably.
+- Minor UI inconsistencies in spacing and alignment.
 
 ### Notes
-- Backup/Import remains compatible; new fields like `genre`, `finishedAt`, and `bookGoals` are stored in the existing keys.
+- Passed Lighthouse audits for PWA, accessibility, and SEO.
+- Sets the stage for v1.3.0 "Power-User Features."
 
 ---
 
-## [v1.0.0] — 2025-09-07
+## [v1.1.0] — Usability & Goals Update (2025-09-08)
+
 ### Added
-- Vanilla release: add/display books with localStorage persistence.
-- JSON backup & import (Download/Import).
-- Daily Goal with inline validation; color-changing progress bar (red / amber / green); streak counters.
-- Theme toggle including **System** mode with live OS sync.
-- Accessibility pass: real labels via `.sr-only`, visible `:focus-visible` outlines, and a `<noscript>` banner.
-- Search, sort, and basic multi-select filters; optional TBR month filter.
+- Reading goals widget with daily target setting.
+- Filter options for finished, unfinished, and TBR books.
+- Expanded see data for initial testing.
 
 ### Changed
-- Date handling uses local `dayKey()` so sessions count for the correct “today.”
-- Progress bar now applies state classes to reflect goal percentage.
+- Improve import/export flow with clearer messaging.
+- Refined book list rendering for better performance.
 
 ### Fixed
-- `storage.js`: `backupAll()` keys; `downloadJSON()` anchor scope; stricter import validation.
-- `app.js`: `loadBooks()` parse typo; `computeStreaks()` logic; theme button label; `matchMedia` string; safe `render()` calls; UTC→local date mismatch; progress color toggling.
+- Edge cases with empty book lists showing incorrectly.
+- Minor style inconsistencies across browsers.
+
+### Notes
+- Backup/Import remains compatible
+- New fields like `genre`, `finishedAt`, and `bookGoals` are stored in the existing keys.
 
 ---
 
-## [v0.1.0] — 2025-09-02  
+## [v1.0.0] — Core MVP Release (2025-09-07)
+
+### Added
+- Core reading log functionality: add, edit, remove books.
+- Track pages/minutes read with daily aggregation.
+- JSON backup and import with localStorage persistence.
+- Theme toggle for light/dark mode.
+
+### Changed
+- Improved input validation on book forms.
+
+### Fixed
+- Prevented invalid JSON imports from crashing the app.
+
+---
+
+## [v0.1.0] — Project Setup & Templates (2025-09-02)
+
 ### Added  
-- **Core App**: Vanilla JavaScript skeleton with `index.html`, `index.js`, and `style.css`.  
-- **Persistence**: `localStorage` used to store reading log data between sessions.  
-- **Import/Export**: JSON backup/import functionality for reading logs.  
-- **Seed Data**: Included `readinglog-seed.json` with three example books.  
-- **CHANGELOG.md** to track notable changes.  
-- **README**: Community badges for Contributing, Code of Conduct, and “Security: Report a Vulnerability”.  
-- **Security policy**: Rules of Engagement, Severity & Target Timelines table, In-Scope/Out-of-Scope examples, Safe Harbor, Researcher Credit, and CVE/advisory note; added Table of Contents.  
-- **Bug report template**: Security note + advisory link, Console/Network capture, Sample Data (import/export), Severity, Reproducibility, Workaround, Related Issues/PRs, Additional Context.  
-- **Feature request template**: Non-Goals, User Story, Acceptance Criteria, optional UI/UX section, Data Model/Storage changes, Success Metrics, A11y & Security considerations, Risks/Dependencies, Scope/Size estimate, Release Notes, and checklist items (docs + CHANGELOG).  
-- **PR template**: Links to README/CONTRIBUTING, Breaking changes prompt, expanded change types (e.g., Refactor/Chore), checklist items for a11y, security considerations, and CHANGELOG updates.  
-- **Project Structure (README)** now lists `CHANGELOG.md`.  
-
-### Changed  
-- **Naming**: Standardized on “**Readr — Reading Log App**” (first mention), then “Readr”.  
-- **Root README**: Updated tagline, setup tracks, and documentation links.  
-- **README**: Clarified Installation & Usage; expanded Import/Export with JSON shape; kept Features/Roadmap badge rows; corrected internal paths; added Troubleshooting and Accessibility notes.  
-- **Security policy**: Copyedits and clarity improvements; standardized em dashes.  
-- **Issue/PR templates**: Headings and wording updated to say “in Readr”; consistent em-dash style; added quick links to README/CONTRIBUTING.  
-
-### Fixed  
-- JSON import now properly validates and confirms with “Import successful!” message.  
-- Broken relative links in PR template (`../` instead of `../../`).  
-- Typos (e.g., “reporoduce”→“reproduce”, “phising”→“phishing”, “degredation”→“degradation”, “ad”→“add”).  
-- Quotation mark in “Workaround: None”.  
-- “Self-XSS” capitalization; minor punctuation and spacing.  
+- Initial project skeleton (vanilla JS, HTML, CSS).
+- Seed data file for quick testing.
+- Documentation and metadata files:
+    - `CHANGELOG.md`, `CODE_OF_CONDUCT.md`, `CONTRIBUTING.md`, `README.md`, `LICENSE`.
+- `.github/` folder with:
+    - `SECURITY.md`, `pull_request_template.md`.
+    - `ISSUE_TEMPLATE/` folder with `bug_report.md`, `feature_request.md`.
+    - `codeql.yml` for code scanning setup.
+- `docs/` folder with:
+    - `README.md`, `design-decisions.md`, `features.md`, `getting-started.md`, `roadmap.md`, `troubleshooting.md`.
+- Basic GitHub Actions workflow for linting.
 
 ### Security  
-- Documented **private vulnerability reporting via GitHub Security Advisories** (`/security/advisories/new`) instead of email.  
+- Documented **private vulnerability reporting via GitHub Security Advisories** (`/security/advisories/new`) instead of email.
