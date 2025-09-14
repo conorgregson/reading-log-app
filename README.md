@@ -95,7 +95,7 @@ Full project documentation is available in the [/docs](./docs/) folder:
 - [Roadmap](./docs/roadmap.md) — milestones & timelines
 - [Troubleshooting](./docs/troubleshooting.md) — common issues & fixes
 - [Brand Assets](./docs/BRAND-ASSETS.md) — logos, color, usage guidelnes
-- [Progressive Web App (PWA)](./docs/PWA.md) — install guide, offline features, roadamp
+- [Progressive Web App (PWA)](./docs/PWA.md) — install guide, offline features, roadmap
 
 ---
 
