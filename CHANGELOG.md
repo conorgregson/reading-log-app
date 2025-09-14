@@ -8,7 +8,7 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/), and
 ### Added
 - New teal and monochrome white logos, favicons, and social preview images.
 - `BRAND_ASSETS.md` with branding guidelines.
-- `PWD.md` with initial PWA documentation.
+- `PWA.md` with initial PWA documentation.
 - Toast notifications for import/export success/errors.
 - Update prompt when a new version is available via service worker.
 - Project structure refinements:
