@@ -28,6 +28,8 @@ See [Getting Started](Getting-Started) for details.
 - [Design Decisions](./design-decisions.md)
 - [Roadmap](./roadmap.md)
 - [Troubleshooting](./troubleshooting.md)
+- [Brand Assets](./BRAND_ASSETS.md)
+- [Progressive Web App (PWA)](./PWA.md)
 
 ---
 

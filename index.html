@@ -3,8 +3,28 @@
     <head>
         <meta charset="UTF-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+
+        <!-- Open Graph / Twitter -->
+        <meta property="og:title" content="Readr — Turn pages into progress" />
+        <meta property="og:description" content="Minimal, offline-first reading log with PWA support and JSON backup/import." />
+        <meta property="og:type" content="website" />
+        <meta property="og:url" content="https://conorgregson.github.io/reading-log-app/" />
+        <meta property="og:image" content="https://conorgregson.github.io/reading-log-app/images/social-card-teal-white-stacked.png" />
+        <meta name="twitter:card" content="summary_large_image" />
+        <meta name="twitter:title" content="Readr — Turn pages into progress" />
+        <meta name="twitter:description" content="Minimal, offline-first reading log with PWA support and JSON backup/import." />
+        <meta name="twitter:image" content="https://conorgregson.github.io/reading-log-app/images/social-card-teal-white-stacked.png" />
+
         <title>Readr</title>
-        <link rel="icon" type="image/png" href="favicon.png">
+        <!-- Default (light mode) -->
+        <link rel="icon" type="image/x-icon" href="images/favicon_teal.ico" media="(prefers-color-scheme: light)">
+        <!-- Dark mode -->
+        <link rel="icon" type="image/x-icon" href="images/favicon_white.ico" media="(prefers-color-scheme: dark)">
+        
+        <link rel="icon" href="images/readr_logo_R_teal_master.png">
+        <link rel="apple-touch-icon" href="images/readr_icon_192.png">
+        <link rel="manifest" href="manifest.json">
+
         <link rel="stylesheet" href="styles.css">
     </head>
     <body>
@@ -15,14 +35,28 @@
         </noscript>
 
         <header id="toolbar" class="row">
-            <h1>📚 Readr</h1>
+            <h1 class="brand">
+                <span class="wordmark">
+                    <img src="images/readr_logo_R_teal_master.png" alt="R logo" class="logo">
+                    eadr
+                </span>
+                <span class="slogan">Turn pages into progress</span>
+            </h1>
             <div class="spacer"></div>
             <button id="mode-toggle" type="button" aria-label="Toggle theme">Switch Mode</button>
-            <button id="backup-data" type="button">Backup Data</button>
+            <button id="export-btn" type="button">Backup Data</button>
             <input type="file" id="import-file" accept=".json,application/json" hidden />
-            <button id="import-data" type="button" aria-controls="import-file">Import Data</button>
-            <button id="reset-data" type="button" title="Erase all books and reading sessions. Your goal and theme stay the same.">Reset Data</button>
-            <button id="reset-profile" type="button" title="Reset goal and theme to defaults. Your books and logs won't be touched.">Reset Profile</button>
+            <button id="import-btn" type="button" aria-controls="import-file">Import Data</button>
+
+            <section id="settings" class="card">
+                <h2>Settings</h2>
+                <div class="row gap">
+                    <button id="reset-profile" type="button" title="Reset goal and theme to defaults. Your books and logs won't be touched.">Reset Profile</button>
+                    <button id="reset-data" type="button" title="Erase all books and reading sessions. Your goal and theme stay the same.">Reset Data</button>
+                    <button id="clear-runtime-cache" type="button">Clear Cache</button>
+                    <button id="check-updates" type="button">Check for Updates</button>
+                </div>
+            </section>
         </header>
 
         <!-- Add a Book -->
@@ -35,7 +69,7 @@
                 <label class="sr-only" for="author">Author</label>
                 <input type="text" id="author" placeholder="Author" required /> 
 
-                <label class="sr-ony" for="genre"></label>
+                <label class="sr-only" for="genre">Genre</label>
                 <input type="text" id="genre" placeholder="Genre" list="genre-options" />
                 <datalist id="genre-options"></datalist>
 
@@ -110,6 +144,9 @@
         <section id="book-list">
             <h2>Books</h2>
             <ul id="books"></ul>
+            <div id="books-empty" class="muted" hidden>
+                No books yet — add your first one above.
+            </div>
         </section>
 
         <section id="goal-widget">
@@ -123,26 +160,48 @@
                 </label>
 
                 <label>Value
-                    <input 
-                        id="goal-value" 
-                        type="number" 
-                        min="1" 
-                        placeholder="e.g., 20" 
-                        inputmode="numeric"
-                        required
-                        aria-required="true"
+                    <div class="nudge-group">
+                        <button id="goal-dec" type="button" aria-label="Decrease daily goal">−</button> 
+                        <input 
+                            id="goal-value" 
+                            type="number" 
+                            min="1" 
+                            placeholder="e.g., 20" 
+                            inputmode="numeric"
+                            required
+                            aria-required="true"
                         />
+                        <button id="goal-inc" type="button" aria-label="Increase daily goal">+</button>
+                    </div>
                 </label>
 
                 <button id="save-goal" type="button">Save Goal</button>
+                <button id="quick-toggle-metric" type="button" aria-pressed="false" title="Quick toggle between Pages/Minutes">Toggle Metric</button>
             </div>
 
             <div id="today-progress">
-                <div id="today-bar"><span id="today-bar-fill"></span></div>
+                <div 
+                    id="today-bar"
+                    role="progressbar"
+                    aria-label="Daily reading progress"
+                    aria-valuemin="0"
+                    aria-valuenow="0"
+                    aria-valuemax="0"
+                    tabindex="0"
+                    class="has-tooltip"
+                >
+                    <span id="today-bar-fill"></span>
+                    <div id="today-tooltip" role="tooltip" aria-live="polite" aria-hidden="true"></div>
+                </div>
                 <div id="today-stats">
-                    <strong id="today-amount">0</strong> / <span id="today-goal">0</span>
+                    <strong id="today-amount">0</strong> 
+                    <span id="today-unit">pages</span>
+                    / 
+                    <span id="today-goal">0</span>
+                    <span id="today-pct" aria-hidden="true" style="margin-left:.5rem;">(0%)</span>
                     <span id="today-met" aria-live="polite"></span>
                 </div>
+                <div id="today-remaining" class="muted" aria-live="polite">0 to go</div>
             </div>
 
             <div id="streaks">
@@ -188,7 +247,10 @@
             </form>
         </section>
 
+        <!--- App toasts -->
+        <div id="toasts" aria-live="polite" aria-atomic="true"></div>
+
         <script src="storage.js"></script>
-        <script src="app.js"></script>
+        <script type="module" src="app.js"></script>
     </body>
 </html>

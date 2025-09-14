@@ -18,7 +18,6 @@ let logs = [];
 let profile = {
   id: "me", 
   dailyGoal: null,
-  theme: "system",
   bookGoals: { monthly: 0, yearly: 0 }
 };
 const ui = { filters: {} };
@@ -180,7 +179,7 @@ function nextThemeMode(current) {
   return current === "light" ? "dark" : current === "dark" ? "system" : "light";
 }
 
-// live update when OS theme changes and we're in "system"
+// Live update when OS theme changes and we're in "system"
 if (media && media.addEventListener) {
   media.addEventListener("change", () => {
     if (themeMode === "system") {
@@ -252,7 +251,7 @@ function buildBookOptions() {
 }
 
 // -----------------------
-// Filters/Search/Sort wiring
+// Filters/Search/Sort Wiring
 // -----------------------
 
 function uniqueSorted(values) {
@@ -382,14 +381,14 @@ if (logForm) {
     if (dateEl) {
       dateEl.value = dayKey(); // keep it on local 'today'
     }
-    updateGoalUI();
+    renderProfileUI();
     if (typeof window.render === "function") {
       window.render();
     }
   });
 }
 
-// Save goal & reset buttons
+// Save goal button
 const saveGoalBtn = document.getElementById("save-goal");
 if (saveGoalBtn) {
   saveGoalBtn.addEventListener("click", () => {
@@ -407,7 +406,7 @@ if (saveGoalBtn) {
     }
 
     if (!Number.isFinite(raw) || raw < 1) {
-      err.textContent = "Please enter a number ≥ 1.";
+      showToast("Please enter a number ≥ 1.", "error", { timeout: 4000 });
       input.focus();
       return;
     }
@@ -416,8 +415,27 @@ if (saveGoalBtn) {
     const value = Math.max(1, raw);
     profile.dailyGoal = { type, value };
     saveProfile();
-    updateGoalUI();
+    renderProfileUI();
   });
+}
+
+const decBtn = document.getElementById("goal-dec");
+const incBtn = document.getElementById("goal-inc");
+if (decBtn || incBtn) {
+  const input = document.getElementById("goal-value");
+  const coerce = (value) => Math.max(1, Math.floor(Number(value) || 1));
+  const setGoalValue = (next) => {
+    if (!profile.dailyGoal) {
+      const typeSel = document.getElementById("goal-type");
+      profile.dailyGoal = { type: typeSel?.value === "minutes" ? "minutes" : "pages", value: 20 };
+    }
+    profile.dailyGoal.value = coerce(next);
+    input.value = String(profile.dailyGoal.value);
+    saveProfile();
+    renderProfileUI();
+  };
+  decBtn?.addEventListener("click", () => setGoalValue((profile?.dailyGoal?.value || input.value || 1) - 1));
+  incBtn?.addEventListener("click", () => setGoalValue((profile?.dailyGoal?.value || input.value || 1) + 1));
 }
 
 const saveBookGoalsBtn = document.getElementById("save-book-goals");
@@ -427,10 +445,36 @@ if (saveBookGoalsBtn) {
     const y = Math.max(0, +document.getElementById("goal-yearly-books").value || 0);
     profile.bookGoals = { monthly: m, yearly: y };
     saveProfile();
-    updateBookGoalsUI();
+    renderProfileUI();
   });
 }
 
+// Quick toggle between pages/minutes in the widget
+const quickToggle = document.getElementById("quick-toggle-metric");
+if (quickToggle) {
+  quickToggle.addEventListener("click", () => {
+    // If no goal yet, create a sane default and flip
+    if (!profile.dailyGoal) {
+      profile.dailyGoal = { type: "pages", value: 20 };
+    }
+    const next = profile.dailyGoal.type === "minutes" ? "pages" : "minutes";
+    profile.dailyGoal = { ...profile.dailyGoal, type: next };
+    saveProfile();
+
+    // Mirror the UI <select> so both stay in sync
+    const goalTypeSel = document.getElementById("goal-type");
+    if (goalTypeSel) {
+      goalTypeSel.value = next;
+    }
+
+    // Update aria-pressed state for the toggle
+    quickToggle.setAttribute("aria-pressed", next === "minutes" ? "true" : "false");
+
+    renderProfileUI();
+  });
+}
+
+// Reset button
 const resetBtn = document.getElementById("reset-data")
 if (resetBtn) {
   resetBtn.addEventListener("click", () => {
@@ -445,7 +489,7 @@ if (resetBtn) {
       if (typeof window.render === "function") {
         window.render();
       }
-      updateGoalUI();
+      renderProfileUI();
     }
   });
 }
@@ -459,21 +503,191 @@ if (resetProfileBtn) {
       profile = { 
         id: "me", 
         dailyGoal: null, 
-        theme: "system" 
+        bookGoals: { monthly: 0, yearly: 0}
       };
       themeMode = "system";
       applyAppearance(themeMode);
-      updateGoalUI();
-      alert("Profile reset.");
+      saveProfile();
+      renderProfileUI();
+      showToast("Profile reset.", "success");
     }
   });
+}
+
+// Clear Service Worker runtime caches (keeps data intact)
+document.getElementById("clear-runtime-cache")?.addEventListener("click", async () => {
+  if (!("caches" in window)) {
+    alert("Cache storage not supported in this browser.");
+    return;
+  }
+  try {
+    const keys = await caches.keys();
+    const runtimeKeys = keys.filter(key => key.startsWith("readr-runtime-"));
+    await Promise.all(runtimeKeys.map(key => caches.delete(key)));
+
+    // Optional: also nudge the active SW to revalidate next loads
+    // (No need to unregister; stale-while-revalidate will refill naturally)
+    showToast("Offline runtime cache cleared.", "success");
+  } catch (err) {
+    showToast("Could not clear cache. See console for details.", "error", { timeout: 5000 });
+    console.warn("clear-runtime-cache-error", err);
+  }
+});
+
+// Check updates
+document.getElementById("check-updates")?.addEventListener("click", async () => {
+  const note = showToast("Checking for updates...", "info", { timeout: 2000 });
+  try {
+    await checkForUpdatesNow();
+    // If an update is found, the updatefound/ installed path above will show the "Update available" toast.
+  } catch {
+    showToast("Could not check for updates.", "error", { timeout: 4000 });
+  }
+});
+
+// ---------- Tooltip: helpers ----------
+function getBookTitleById(id) {
+  const book = books.find((x) => x.id === id);
+  return book ? book.title : "Unknown book";
+}
+
+function sameDayKey(s) {
+  // accepts "YYYY-MM-DD" or ISO; normalizes to YYYY-MM-DD
+  if (!s) return dayKey();
+  if (typeof s === "string") {
+    // fast-path for stored "YYYY-MM-DD"
+    if (s.length >= 10 && s[4] === "-" && s[7] === "-") {
+      return s.slice(0, 10);
+    } 
+    // ISO string
+    return s.slice(0, 10);
+  }
+  // date object / timestamp
+  return dayKey(new Date(s));
+}
+
+function getTodayEntries() {
+  const today = dayKey();
+  return logs
+    .filter((x) => sameDayKey(x.date) === today)
+    .map((x) => {
+      const parts = [];
+      const p = Number(x.pagesRead);
+      const m = Number(x.minutes);
+      if (Number.isFinite(p) && p > 0) {
+        parts.push(`${p} pages`);
+      }
+      if (Number.isFinite(m) && m > 0) {
+        parts.push(`${m} min`);
+      }
+      return { title: getBookTitleById(x.bookId), what: parts.length ? parts.join(" • ") : "—" };
+    });
+}
+
+function renderTodayTooltip() {
+  const tip = document.getElementById("today-tooltip");
+  if (!tip) return;
+  const entries = getTodayEntries();
+  if (!entries.length) {
+    tip.innerHTML = `<h4>Today’s entries</h4><div class="muted">No entries yet today.</div>`;
+    return;
+  }
+  const items = entries
+  .map((entry) => `<li><strong>${entry.title}</strong><br><span class="muted">${entry.what}</span></li>`)
+  .join("");
+  tip.innerHTML = `<h4>Today’s entries</h4><ul>${items}</ul>`;
+}
+
+function attachTooltipEvents() {
+  const bar = document.getElementById("today-bar");
+  const tip = document.getElementById("today-tooltip");
+  if (!bar || !tip) return;
+
+  let hideTimer = null;
+  let relayoutBound = null;
+
+  const positionTooltip = () => {
+    // Measure after it's visible to get accurate height
+    const barRect = bar.getBoundingClientRect();
+    const tipRect = tip.getBoundingClientRect();
+    const gap = 0;
+
+    const spaceAbove = barRect.top;
+    const spaceBelow = window.innerHeight - barRect.bottom;
+
+    // Choose side with enough room; prefer above when possible
+    if (tipRect.height + gap <= spaceAbove) {
+      tip.classList.remove("pos-below");
+    } else if (tipRect.height + gap <= spaceBelow) {
+      tip.classList.add("pos-below");
+    } else {
+      // Neither side fits fully — pick the larger side
+      (spaceAbove >= spaceBelow)
+        ? tip.classList.remove("pos-below")
+        : tip.classList.add("pos-below");
+    }
+  };
+
+  const show = () => { 
+    clearTimeout(hideTimer); 
+    renderTodayTooltip(); // render fresh only when showing
+    tip.classList.add("visible"); 
+    tip.setAttribute("aria-hidden", "false"); 
+    // wait a frame so the browser lays it out, then position
+    requestAnimationFrame(() => {
+      positionTooltip();
+    });
+    // keep it positioned on viewport, changes while visible
+    relayoutBound = () => positionTooltip();
+    window.addEventListener("resize", relayoutBound, { passive: true });
+    window.addEventListener("scroll", relayoutBound, { passive: true });
+  };
+
+  const hide = (delay = 120) => { 
+    hideTimer = setTimeout(() => {
+      tip.classList.remove("visible"); 
+      tip.setAttribute("aria-hidden", "true"); 
+      if (relayoutBound) {
+        window.removeEventListener("resize", relayoutBound);
+        window.removeEventListener("scroll", relayoutBound);
+        relayoutBound = null;
+      }
+    }, delay);
+  };
+
+  // Mouse + focus
+  bar.addEventListener("mouseenter", show);
+  bar.addEventListener("mouseleave", () => hide(120));
+  bar.addEventListener("focus", show);
+  bar.addEventListener("blur", () => hide(0));
+
+  // Keyboard (Esc closes)
+  bar.addEventListener("keydown", (e) => {
+    if (e.key === "Escape") {
+      e.stopPropagation();
+      hide(0);
+      bar.blur();
+    }
+  });
+
+  // Outside click/tap closes when open
+  document.addEventListener("pointerdown", (e) => {
+    if (!tip.classList.contains("visible")) return;
+    if (!bar.contains(e.target) && !tip.contains(e.target)) {
+      hide(0);
+    }
+  }, { passive: true });
 }
 
 // Render goal UI
 function updateGoalUI() {
   const amountEl = document.getElementById("today-amount");
+  const unitEl = document.getElementById("today-unit");
   const goalEl = document.getElementById("today-goal");
+  const pctEl = document.getElementById("today-pct");
+  const remainingEl = document.getElementById("today-remaining");
   const metEl = document.getElementById("today-met");
+  const bar = document.getElementById("today-bar");
   const barFill = document.getElementById("today-bar-fill");
   const sCur = document.getElementById("streak-current");
   const sMax = document.getElementById("streak-max");
@@ -484,34 +698,48 @@ function updateGoalUI() {
   if (!profile.dailyGoal) {
     amountEl.textContent = "0";
     goalEl.textContent = "0";
+    unitEl && (unitEl.textContent = "pages");
+    pctEl && (pctEl.textContent = "(0%)");
+    remainingEl && (remainingEl.textContent = "0 to go");
     metEl.textContent = "(set a goal)";
     barFill.classList.remove("success", "warning", "error", "zero");
     barFill.style.width = "0%";
+    if (bar) {
+      bar.setAttribute("aria-valuenow", "0");
+      bar.setAttribute("aria-valuemax", "0");
+    }
     sCur.textContent = "0";
     sMax.textContent = "0";
     return;
   }
 
   const type = profile.dailyGoal.type;
-  const value = profile.dailyGoal.value;
+  const value = Math.max(1, Number(profile.dailyGoal.value) || 1);
 
-  // Ensure today's default data in the log form
+  // Ensure today's default data
   const dateEl = document.getElementById("log-date");
   if (dateEl && !dateEl.value) {
     dateEl.value = dayKey(); // local YYYY-MM-DD
   }
 
+  // Aggregate logs for today using your existing helper
   const totals = aggregateByDay(logs, type === "minutes" ? "minutes" : "pages");
-  const todayAmount = totals.get(dayKey()) || 0;
+  const todayAmount = Number(totals.get(dayKey()) || 0);
 
+  // Textual updates
   amountEl.textContent = String(todayAmount);
   goalEl.textContent = String(value);
+  unitEl && (unitEl.textContent = type === "minutes" ? "minutes" : "pages");
+
+  // Percent + to-go
   const percent = Math.max(0, Math.min(1, todayAmount / value));
-  // width
-  barFill.style.width = (percent * 100).toFixed(0) + "%";
-  // color + zero-width hint
-  barFill.classList.remove("success", "warning", "error");
-  
+  const pct100 = Math.round(percent * 100);
+  pctEl && (pctEl.textContent = `(${pct100}%)`);
+  remainingEl && (remainingEl.textContent = `${Math.max(0, value - todayAmount)} to go`);
+
+  // Bar width + state classes
+  barFill.style.width = `${pct100}%`;
+  barFill.classList.remove("success", "warning", "error", "zero");
   if (percent >= 1) {
     barFill.classList.add("success");
   } else if (percent >= 0.5) {
@@ -519,10 +747,16 @@ function updateGoalUI() {
   } else if (percent > 0) {
     barFill.classList.add("error");
   } else {
-    // exactly 0% → still mark error and add a tiny sliver
     barFill.classList.add("error", "zero");
   }
 
+  // ARIA live values
+  if (bar) {
+    bar.setAttribute("aria-valuenow", String(todayAmount));
+    bar.setAttribute("aria-valuemax", String(value));
+  }
+
+  // Goal met message
   metEl.textContent = todayAmount >= value ? "✅ Goal met today!" : "—";
 
   // Streaks
@@ -530,7 +764,7 @@ function updateGoalUI() {
   sCur.textContent = String(current);
   sMax.textContent = String(max);
 
-  // Set the goal type placeholder for inputs
+  // Placeholder nudges on the log inputs
   const pagesEl = document.getElementById("log-pages");
   const minsEl = document.getElementById("log-mins");
   if (pagesEl) {
@@ -565,6 +799,11 @@ function updateBookGoalsUI() {
   monthGoalEl.textContent = String(monthGoal);
   yearDoneEl.textContent = String(yearDone);
   yearGoalEl.textContent = String(yearGoal);
+}
+
+function renderProfileUI() {
+  updateGoalUI();
+  updateBookGoalsUI();
 }
 
 function getMultiSelectValues(selectEl) {
@@ -684,6 +923,57 @@ function render() {
       }
     });
   });
+
+  const emptyEl = document.getElementById("books-empty");
+  if (emptyEl) {
+    emptyEl.hidden = list.children.length > 0;
+  }
+}
+
+// -----------------------
+// Extra helpers
+// -----------------------
+async function checkForUpdatesNow() {
+  const reg = await navigator.serviceWorker.getRegistration();
+  await reg?.update(); // triggers updatefound if a new SW is available
+}
+
+// -----------------------
+// Toasts
+// -----------------------
+function showToast(message, type = "info", { actions = [], timeout = 3000 } = {}) {
+  const host = document.getElementById("toasts");
+  if (!host) return;
+
+  const el = document.createElement("div");
+  el.className = `toast ${type} enter`;
+  el.setAttribute("role", "status");
+  el.innerHTML = `<span>${message}</span><div class="actions"></div>`;
+
+  const actionsBox = el.querySelector(".actions");
+  actions.forEach(({ label, onClick, className = "btn btn-sm" }) => {
+    const b = document.createElement("button");
+    b.type = "button";
+    b.className = className;
+    b.textContent = label;
+    b.addEventListener("click", () => { onClick?.(); dismiss(0); }, { once: true });
+    actionsBox.appendChild(b);
+  });
+
+  host.appendChild(el);
+
+  let hideTimer = null;
+  const dismiss = (delay = 120) => {
+    clearTimeout(hideTimer);
+    el.classList.remove("enter");
+    el.classList.add("exit");
+    setTimeout(() => el.remove(), delay);
+  };
+
+  if (timeout > 0){
+    hideTimer = setTimeout(() => dismiss(), timeout);
+  }
+  return { dismiss };
 }
 
 // -----------------------
@@ -697,7 +987,85 @@ buildBookOptions();       // to populate the log form
 buildFilterOptions();
 attachControlEvents();
 
-updateGoalUI();
-updateBookGoalsUI();
+attachTooltipEvents();
+renderProfileUI();
 
 render();
+
+import { wireImportExport } from "./ui/wire-import-export.js";
+
+wireImportExport({
+  inputEl: document.getElementById("import-file"),
+  importBtn: document.getElementById("import-btn"),
+  exportBtn: document.getElementById("export-btn"),
+  toast: (msg, type, details) => showToast(
+    details?.length
+      ? `${msg}<br><small>${details.join("<br>")}</small>`
+      : msg,
+    type
+  ),
+  onImport: () => {
+    loadBooks();
+    loadLogs();
+    buildBookOptions();
+    buildFilterOptions();
+    renderProfileUI();
+    render();
+  }
+});
+
+// ---- Service Worker registration + update prompt (unified toast) ----
+(async function registerServiceWorker() {
+  if (!("serviceWorker" in navigator)) return;
+
+  try {
+    const reg = await navigator.serviceWorker.register("./sw.js");
+
+
+    function promptUpdate() {
+      // persistent toast with actions (no auto-timeout)
+      showToast("Update available", "info", {
+        actions: [
+          {
+            label: "Refresh",
+            // Ask the waiting SW to skip waiting
+            onClick: () => reg.waiting?.postMessage({ type: "SKIP_WAITING" }),
+            className: "btn btn-sm"
+          },
+          {
+            label: "Dismiss",
+            onClick: () => {},
+            className: "btn-ghost btn-sm"
+          }
+        ],
+        timeout: 0
+      });
+    }
+
+    // If there's already a waiting worker, prompt immediately
+    if (reg.waiting) {
+      promptUpdate();
+    }
+
+    // When a new SW is found, wait until it's installed, then prompt
+    reg.addEventListener("updatefound", () => {
+      const newSW = reg.installing;
+      if (!newSW) return;
+      newSW.addEventListener("statechange", () => {
+        if (newSW.state === "installed" && navigator.serviceWorker.controller) {
+          promptUpdate();
+        }
+      });
+    });
+
+    // When the controller changes, a new SW has taken over → reload once
+    let refreshing = false;
+    navigator.serviceWorker.addEventListener("controllerchange", () => {
+      if (refreshing) return;
+      refreshing = true;
+      window.location.reload();
+    });
+  } catch (err) {
+    showToast("Service Worker registration failed.", "error", { timeout: 5000 });
+  }
+})();

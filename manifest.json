@@ -1,0 +1,25 @@
+{
+    "name": "Readr",
+    "short_name": "Readr",
+    "description": "Turn pages into progress.",
+    "start_url": "./index.html",
+    "scope": "./",
+    "display": "standalone",
+    "orientation": "portrait-primary",
+    "theme_color": "#008080",
+    "background_color": "#ffffff",
+    "icons": [
+        {
+            "src": "images/readr_icon_192.png",
+            "sizes": "192x192",
+            "type": "image/png",
+            "purpose": "any maskable"
+        },
+        {
+            "src": "images/readr_icon_512.png",
+            "sizes": "512x512",
+            "type": "image/png",
+            "purpose": "any maskable"
+        }
+   ]
+}

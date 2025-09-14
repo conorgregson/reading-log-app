@@ -41,7 +41,6 @@
     font-size: 0.9rem;
 }
 
-
 /* Theme Classes*/
 body {
     background: var(--bg);
@@ -75,6 +74,34 @@ body {
     margin: 0;
     padding: 1rem;
     
+}
+
+.brand {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin: 0;   
+}
+
+.wordmark {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 1.5rem;
+    font-weight: bold;
+    color: var(--primary);
+}
+
+.logo {
+  height: 40px;       
+  width: auto;
+}
+
+.slogan {
+    font-size: 0.9rem;
+    color: #444;
+    margin-top: 4px;
+    font-style: italic;
 }
 
 /* Toolbar with gap */
@@ -111,11 +138,12 @@ button {
 button:hover {
     background: var(--primary-dark);
 }
-button.delete {
-    background: var(--accent);
+
+#clear-runtime-cache {
+    opacity: .9;
 }
-button.delete:hover {
-    background: var(--accent-light);
+#clear-runtime-cache:hover {
+    opacity: 1;
 }
 
 /* Keyboard focus styles*/
@@ -150,11 +178,26 @@ li {
     box-shadow: 0 1px 2px rgba(0,0,0,0.05);
 }
 
+#books-empty {
+    text-align: center;
+    padding: 1rem;
+}
+#books button.delete {
+    background: var(--accent);
+}
+#books button.delete:hover {
+    background: var(--accent-light);
+}
+
 .row {
   display: flex;
   flex-wrap: wrap;
   gap: 0.5rem;
   align-items: center;
+}
+
+.muted {
+    color: var(--muted);
 }
 
 #controls {
@@ -196,6 +239,32 @@ li {
     margin: 1rem 0;
 }
 
+.nudge-group {
+    display: inline-flex;
+    align-items: stretch;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    overflow: hidden;
+}
+.nudge-group input {
+    background: var(--card-bg);
+    border: none;
+    width: 6ch;
+    text-align: center;
+    padding: 0.4rem 0.5rem;
+}
+.nudge-group button {
+    background: var(--track);
+    color: inherit;
+    padding: 0 0.6rem;
+    line-height: 1;
+    font-weight: bold;
+    cursor: pointer;
+}
+.nudge-group button:hover {
+    background: var(--border);
+}
+
 #today-bar { 
     width: 100%; 
     height: 10px; 
@@ -204,10 +273,7 @@ li {
     overflow: hidden; 
 }
 #today-bar-fill { 
-    display: block; 
-    height: 100%; 
-    width: 0%; 
-    background: var(--primary); 
+    transition: width .35s ease-in-out; 
 }
 #today-bar-fill.zero {
     width: 2px;
@@ -235,18 +301,71 @@ li {
     gap: 1rem; 
 }
 
-#book-list .finish-btn {
-    background: var(--progress-success);
+/* Tooltip */
+#today-tooltip {
+    bottom: calc(100% + 8px);
+    top: auto;
+    left: 50%;
+    transform: translateX(-50%);
+    max-width: min(320px, 90vw);
 }
-#book-list .finish-btn:hover {
-    filter: brightness(0.95);
+
+/* flip below when space above is tight */
+#today-tooltip.pos-below {
+    top: calc(100% + 8px);
+    bottom: auto;
 }
-#book-goals {
-    background: var(--card-bg);
-    border: 1px solid var(--border);
-    border-radius: 10px;
-    padding: 0.75rem;
-    margin: 1rem 0;
+
+/* Arrow (default points down since tooltip is above the bar) */
+#today-tooltip::after {
+    content: "";
+    position: absolute;
+    left: 50%;
+    transform: translateX(-50%);
+    /* triangle */
+    width: 0;
+    height: 0;
+    border-left: 8px solid transparent;
+    border-right: 8px solid transparent;
+
+    /* default = above the bar, so arrow points DOWN */
+    border-top: 8px solid var(--border);
+    border-bottom: 0;
+
+    /* sit just under the tooltip box (which is above the bar) */
+    bottom: -8px;
+}
+
+/* Inner arrow to match background (for a "bordered* arrow look) */
+#today-tooltip::before {
+    content: "";
+    position: absolute;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 0;
+    height: 0;
+    border-left: 7px solid transparent;
+    border-right: 7px solid transparent;
+
+    border-top: 7px solid var(--card-bg);
+    border-bottom: 0;
+
+    bottom: -7px;
+
+}
+
+/* Flip arrow when tooltip is below the bar */
+#today-tooltip.pos-below::after {
+    border-top: 0;
+    border-bottom: 8px solid var(--border);
+    top: -8px;   /* move to top edge of tooltip */
+    bottom: auto;
+}
+#today-tooltip.pos-below::before {
+    border-top: 0;
+    border-bottom: 7px solid var(--card-bg);
+    top: -7px;   
+    bottom: auto;
 }
 
 #log-form { 
@@ -273,6 +392,89 @@ li {
     background: #444;
 }
 
+/** Toasts **/
+#toasts {
+    position: fixed;
+    left: 50%;
+    bottom: 16px;
+    transform: translateX(-50%);
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    z-index: 1000;
+}
+
+/* base */
+.toast {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    background: var(--card-bg);
+    color: var(--text);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 0.6rem 0.8rem;
+    box-shadow: 0 8px 24px rgba(0,0,0,.15);
+    min-width: 240px;
+    max-width: 90vw;
+}
+.toast strong {
+    margin-right: 0.25rem;
+}
+.toast .actions {
+    margin-left: auto;
+    display: inline-flex;
+    gap: 0.5rem;
+}
+.toast .btn-ghost {
+    background: transparent;
+    border: 1px solid transparent;
+}
+
+/* variants */
+.toast.info {
+    border-color: var(--border);
+}
+.toast.success {
+    border-color: #2e7d32;
+}
+.toast.error {
+    border-color: #c62828;
+}
+
+/* entrance/exit */
+.toast.enter {
+    animation: toast-in 0.18s ease-out both;
+}
+.toast.exit {
+    animation: toast-out 0.16s ease-in both;
+}
+@keyframes toast-in {
+    from {
+        opacity: 0;
+        transform: translate(-50%, 8px);
+    } 
+    to {
+        opacity: 1;
+        transform: translate(-50%, 0);
+    }
+}
+@keyframes toast-out {
+    from {
+        opacity: 1;
+    } 
+    to {
+        opacity: 0;
+    }
+}
+
 @media (prefers-reduced-motion: reduce) {
   * { transition: none !important; animation: none !important; }
+}
+
+/* Show slogan only on wider screens */
+@media (max-width: 600px) {
+  .slogan {
+    display: none;
+  }
 }

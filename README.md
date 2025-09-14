@@ -1,9 +1,9 @@
 # 📚 Readr - Turn pages into progress
 
-[![License: GPL v3](https://img.shields.io/badge/License-GPLv3-008080.svg)](./LICENSE)
-![Made with JavaScript](https://img.shields.io/badge/Made%20with-JavaScript-003366.svg)
+[![Live Demo](https://img.shields.io/badge/Demo-Online-008080.svg)](https://conorgregson.github.io/reading-log-app/)
 ![Docs](https://img.shields.io/badge/Docs-Available-008080.svg)
-[![Live Demo](https://img.shields.io/badge/demo-online-brightgreen)](https://conorgregson.github.io/reading-log-app/)
+![Made with JavaScript](https://img.shields.io/badge/Made%20with-JavaScript-003366.svg)
+[![License: GPL v3](https://img.shields.io/badge/License-GPLv3-008080.svg)](./LICENSE)
 
 Minimal, offline-first reading log with JSON backup/import, security policy, and contributor-friendly docs.
 
@@ -22,7 +22,7 @@ Minimal, offline-first reading log with JSON backup/import, security policy, and
 - [About](#-about)
 - [Features](#-features)
 - [Tech Stack](#️-tech-stack)
-- [Roadmap](#-roadmap-checklist)
+- [Roadmap](#-roadmap)
 - [Installation & Usage](#-installation--usage)
 - [Screenshots](#-screenshots)
 - [Contributing](#-contributing)
@@ -94,6 +94,8 @@ Full project documentation is available in the [/docs](./docs/) folder:
 - [Design Decisions](./docs/design-decisions.md) — architecture choices & trade-offs
 - [Roadmap](./docs/roadmap.md) — milestones & timelines
 - [Troubleshooting](./docs/troubleshooting.md) — common issues & fixes
+- [Brand Assets](./docs/BRAND-ASSETS.md) — logos, color, usage guidelnes
+- [Progressive Web App (PWA)](./docs/PWA.md) — install guide, offline features, roadamp
 
 ---
 
