@@ -587,15 +587,43 @@ function getTodayEntries() {
 function renderTodayTooltip() {
   const tip = document.getElementById("today-tooltip");
   if (!tip) return;
+
+  // Clear previous content
+  tip.textContent = "";
+
+  // Heading
+  const h4 = document.createElement("h4");
+  h4.textContent = "Today's entries";
+  tip.appendChild(h4);
+
   const entries = getTodayEntries();
   if (!entries.length) {
-    tip.innerHTML = `<h4>Today’s entries</h4><div class="muted">No entries yet today.</div>`;
+    const empty = document.createElement("div");
+    empty.className = "muted";
+    empty.textContent = "No entries yet today.";
+    tip.appendChild(empty);
     return;
   }
-  const items = entries
-  .map((entry) => `<li><strong>${entry.title}</strong><br><span class="muted">${entry.what}</span></li>`)
-  .join("");
-  tip.innerHTML = `<h4>Today’s entries</h4><ul>${items}</ul>`;
+
+  const ul = document.createElement("ul");
+  entries.forEach((entry) => {
+    const li = document.createElement("li");
+
+    const strong = document.createElement("strong");
+    strong.textContent = String(entry.title);
+    li.appendChild(strong);
+
+    li.appendChild(document.createElement("br"));
+
+    const span = document.createElement("span");
+    span.className = "muted";
+    span.textContent = String(entry.what);
+    li.appendChild(span);
+
+    ul.appendChild(li);
+  });
+
+  tip.appendChild(ul);
 }
 
 function attachTooltipEvents() {
@@ -870,26 +898,85 @@ function render() {
   // Render list
   for (const book of rows) {
     const li = document.createElement("li");
-    const meta = [
-      book.author && `<em>${book.author}</em>`,
-      book.series && `<span>Series: ${book.series}</span>`,
-      book.genre && `<span>Genre: ${book.genre}</span>`,
-      book.status && `<span>Status: ${book.status}</span>`,
-      book.plannedMonth && `<span>TBR: ${book.plannedMonth}</span>`,
-    ].filter(Boolean).join(" • ");
 
-    li.innerHTML = `
-      <div class="row" style="justify-content:space-between;align-items:center;">
-        <div>
-          <strong>${book.title}</strong><br />
-          <small>${meta}</small>
-        </div>
-        <div class="row">
-          ${book.status !== "finished" ? `<button data-finish="${book.id}" class="finish-btn">Mark Finished</button>` : ""}
-          <button data-delete="${book.id}" class="delete">Delete</button>
-        </div>
-      </div>
-    `;
+    const row = document.createElement("div");
+    row.className = "row";
+    row.style.justifyContent = "space-between";
+    row.style.alignItems = "center";
+
+    // Left side: title + meta
+    const left = document.createElement("div");
+
+    const titleEl = document.createElement("strong");
+    titleEl.textContent = String(book.title || "");
+    left.appendChild(titleEl);
+
+    left.appendChild(document.createElement("br"));
+
+    const small = document.createElement("small");
+
+    // Build meta as separate safe nodes, join visually with bullets
+    const metaBits = [];
+
+    if (book.author) {
+      const em = document.createElement("em");
+      em.textContent = String(book.author);
+      metaBits.push(em);
+    }
+    if (book.series) {
+      const span = document.createElement("span");
+      span.textContent = `Series: ${String(book.series)}`;
+      metaBits.push(span);
+    }
+    if (book.genre) {
+      const span = document.createElement("span");
+      span.textContent = `Genre: ${String(book.genre)}`;
+      metaBits.push(span);
+    }
+    if (book.status) {
+      const span = document.createElement("span");
+      span.textContent = `Status: ${String(book.status)}`;
+      metaBits.push(span);
+    }
+    if (book.plannedMonth) {
+      const span = document.createElement("span");
+      span.textContent = `TBR: ${String(book.plannedMonth)}`;
+      metaBits.push(span);
+    }
+
+    // Append buts with " • " separators
+    metaBits.forEach((node, idx) => {
+      if (idx > 0) {
+        small.appendChild(document.createTextNode(" • "));
+      };
+      small.appendChild(node);
+    });
+
+    left.appendChild(small);
+    row.appendChild(left);
+
+    // Right side: actions
+    const right = document.createElement("div");
+    right.className = "row";
+
+    if (book.status !== "finished") {
+      const finishBtn = document.createElement("button");
+      finishBtn.className = "finish-btn";
+      finishBtn.type = "button";
+      finishBtn.textContent = "Mark Finished";
+      finishBtn.setAttribute("data-finish", String(book.id));
+      right.appendChild(finishBtn);
+    }
+
+    const delBtn = document.createElement("button");
+    delBtn.className = "delete";
+    delBtn.type = "button";
+    delBtn.textContent = "Delete";
+    delBtn.setAttribute("data-delete", String(book.id));
+    right.appendChild(delBtn);
+
+    row.appendChild(right);
+    li.appendChild(row);
     list.appendChild(li);
   }
 
@@ -1022,7 +1109,7 @@ if (typeof applyAppearance === "function") {
     const move = (idx) => list[idx]?.focus();
 
     if (e.key === "ArrowDown") { e.preventDefault(); move(Math.min(i + 1, list.length - 1)); }
-    if (e.key === "ArrowUp") { e.preventDefault(); move(Math.min(i - 1, 0)); }
+    if (e.key === "ArrowUp") { e.preventDefault(); move(Math.max(i - 1, 0)); }
     if (e.key === "Home") { e.preventDefault(); move(0); }
     if (e.key === "End") { e.preventDefault(); move(list.length - 1); }
     if (e.key === "Enter" || e.key === " ") {
@@ -1045,22 +1132,41 @@ async function checkForUpdatesNow() {
 // -----------------------
 // Toasts
 // -----------------------
-function showToast(message, type = "info", { actions = [], timeout = 3000 } = {}) {
+function showToast(message, type = "info", { actions = [], details = [], timeout = 3000 } = {}) {
   const host = document.getElementById("toasts");
   if (!host) return;
 
   const el = document.createElement("div");
-  el.className = `toast ${type} enter`;
+  el.className = `toast ${/^(info|success|error|warning)$/.test(type) ? type : "info"} enter`;
   el.setAttribute("role", "status");
-  el.innerHTML = `<span>${message}</span><div class="actions"></div>`;
+  
+  const msg = document.createElement("span");
+  msg.textContent = String(message);
 
-  const actionsBox = el.querySelector(".actions");
+  const actionsBox = document.createElement("div");
+  actionsBox.className = "actions";
+
+  el.appendChild(msg);
+
+  if (Array.isArray(details) && details.length) {
+    const small = document.createElement("small");
+    details.forEach((line, i) => {
+      if (i) {
+        small.appendChild(document.createElement("br"));
+      };
+      small.appendChild(document.createTextNode(String(line)));
+    });
+    el.appendChild(small);
+  }
+
+  el.appendChild(actionsBox);
+
   actions.forEach(({ label, onClick, className = "btn btn-sm" }) => {
     const b = document.createElement("button");
     b.type = "button";
     b.className = className;
     b.textContent = label;
-    b.addEventListener("click", () => { onClick?.(); dismiss(0); }, { once: true });
+    b.addEventListener("click", () => { onClick?.(); dismiss(0); }, { once: true});
     actionsBox.appendChild(b);
   });
 
@@ -1102,12 +1208,7 @@ wireImportExport({
   inputEl: document.getElementById("import-file"),
   importBtn: document.getElementById("import-proxy"),
   exportBtn: document.getElementById("export-proxy"),
-  toast: (msg, type, details) => showToast(
-    details?.length
-      ? `${msg}<br><small>${details.join("<br>")}</small>`
-      : msg,
-    type
-  ),
+  toast: (msg, type, details) => showToast(msg, type, { details }),
   onImport: () => {
     loadBooks();
     loadLogs();
