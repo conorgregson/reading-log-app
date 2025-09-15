@@ -102,7 +102,7 @@ Full project documentation is available in the [/docs](./docs/) folder:
 ## 🤝 Contributing
 Contributions, issues, and feature requests are welcome!
 - Check the [issues page](https://github.com/conorgregson/reading-log-app/issues) 
-- Open a pull request with improvements
+- Open a [pull request](.github/pull_request_template.md) with improvements
 
 Quick start for contributors:
 1. Fork the repo
