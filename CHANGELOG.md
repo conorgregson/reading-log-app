@@ -3,6 +3,21 @@ All notable changes to **Readr** (reading log app) will be documented in this fi
 
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/), and we aim to follow [Semantic Versioning](https://semver.org/).  
 
+## [v1.3.2] — Security & Bugfixes (2025-09-15)
+
+### Fixed
+- Replaced `innerHTML` in `showToast()` with safe DOM construction to eliminate XSS risk.
+- Updated `wireImportExport` to pass toast `details` safely without injecting HTML.
+- Corrected `<ul>` list items in `renderTodayTooltip()` (now using `<li>` instead of `<strong>`).
+- Small typo in tooltip heading ("Todays's entries" → "Today’s entries").
+- Minor keyboard navigation bug in settings menu (ArrowUp now uses correct index clamping).
+
+### Notes
+- Patch release only; no new features introduced.
+- Recommended update for anyone using v1.3.x to ensure secure rendering.
+
+---
+
 ## [v1.3.1] — UI Polish & Service Worker Fixes (2025-09-15)
 
 ### Changed
