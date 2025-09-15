@@ -931,6 +931,110 @@ function render() {
 }
 
 // -----------------------
+// Aria sync
+// -----------------------
+function setThemeAriaState() {
+  const btn = document.getElementById("mode-toggle");
+  if (!btn) return;
+  // Cosider "checked" when the effective theme is dark
+  const isDark = (typeof getEffectiveMode === "function")
+    ? getEffectiveMode(themeMode) === "dark"
+    : document.body.classList.contains("mode-dark");
+  btn.setAttribute("aria-checked", String(isDark));
+}
+
+if (typeof applyAppearance === "function") {
+  const _applyAppearance = applyAppearance;
+  applyAppearance = function (mode) {
+    _applyAppearance(mode);
+    setThemeAriaState();
+  };
+  setThemeAriaState();
+}
+
+// -----------------------
+// Settings dropdown
+// -----------------------
+(function wireSettingsMenu() {
+  const trigger = document.querySelector(".settings__trigger");
+  const menu = document.getElementById("settings-menu");
+  if (!trigger || !menu) return;
+
+  const items = () => Array.from(menu.querySelectorAll('.r-btn.r-btn--sm,[role="menuitem"],[role="menuitemcheckbox"]'));
+  let closeTimer = null;
+
+  const openMenu = () => {
+    clearTimeout(closeTimer);
+    trigger.setAttribute("aria-expanded", "true");
+    menu.hidden = false;
+    requestAnimationFrame(() => menu.classList.add("show"));
+    // Focuse the first actionable item
+    items()[0]?.focus();
+  };
+
+  const closeMenu = (focusTrigger = false) => {
+    trigger.setAttribute("aria-expanded", "false");
+    menu.classList.remove("show");
+    closeTimer = setTimeout(() => { menu.hidden = true; }, 150);
+    if (focusTrigger) trigger.focus();
+  };
+
+  // Toggle on click
+  trigger.addEventListener("click", (e) => {
+    e.stopPropagation();
+    const expanded = trigger.getAttribute("aria-expanded") === "true";
+    expanded ? closeMenu(true) : openMenu();
+  });
+
+  // Close on outside click
+  document.addEventListener("click", (e) => {
+    if (!menu.hidden && !menu.contains(e.target) && e.target !== trigger) {
+      closeMenu();
+    }
+  });
+
+  // Close on Excape + trab Tab when open
+  document.addEventListener("keydown", (e) => {
+    if (menu.hidden) return;
+    if (e.key === "Escape") {
+      e.preventDefault();
+      closeMenu(true);
+    } else if (e.key === "Tab") {
+      const list = items();
+      if (!list.length) return;
+      const first = list[0];
+      const last = list[list.length - 1];
+      if (e.shiftKey && document.activeElement === first) {
+        e.preventDefault();
+        last.focus();
+      } else if (!e.shiftKey && document.activeElement === last) {
+        e.preventDefault();
+        first.focus();
+      }
+    }
+  });
+
+  // Roving focus inside menu: ↑/↓/Home/End; Enter/Space activates
+  menu.addEventListener("keydown", (e) => {
+    const list = items();
+    if (!list.length) return;
+    const i = list.indexOf(document.activeElement);
+    const move = (idx) => list[idx]?.focus();
+
+    if (e.key === "ArrowDown") { e.preventDefault(); move(Math.min(i + 1, list.length - 1)); }
+    if (e.key === "ArrowUp") { e.preventDefault(); move(Math.min(i - 1, 0)); }
+    if (e.key === "Home") { e.preventDefault(); move(0); }
+    if (e.key === "End") { e.preventDefault(); move(list.length - 1); }
+    if (e.key === "Enter" || e.key === " ") {
+      e.preventDefault();
+      document.activeElement?.click();
+      // Close after activation
+      closeMenu(true);
+    }
+  });
+})();
+
+// -----------------------
 // Extra helpers
 // -----------------------
 async function checkForUpdatesNow() {
@@ -996,8 +1100,8 @@ import { wireImportExport } from "./ui/wire-import-export.js";
 
 wireImportExport({
   inputEl: document.getElementById("import-file"),
-  importBtn: document.getElementById("import-btn"),
-  exportBtn: document.getElementById("export-btn"),
+  importBtn: document.getElementById("import-proxy"),
+  exportBtn: document.getElementById("export-proxy"),
   toast: (msg, type, details) => showToast(
     details?.length
       ? `${msg}<br><small>${details.join("<br>")}</small>`

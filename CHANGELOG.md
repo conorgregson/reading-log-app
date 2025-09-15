@@ -3,6 +3,29 @@ All notable changes to **Readr** (reading log app) will be documented in this fi
 
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/), and we aim to follow [Semantic Versioning](https://semver.org/).  
 
+## [v1.3.0] — UI & Accessibility Overhaul (2025-09-15)
+
+### Added
+- New **gear-triggered Settings dropdown** with animation and full keyboard navigation (↑/↓/Home/End, Enter/Space).
+- **Accessibility overhaul**: ARIA roles (`menu`, `menuitem`, `menuitemcheckbox`), `aria-expanded`, `aria-checked`, screen-reader hints.
+- Theme token **`--hover-bg`** with light/dark values.
+- Stronger **focus-visible** states for gear and menu items.
+
+### Changed
+- **Header** consolidated to a single `#toolbar` with app logo left, Settings gear right.
+- **Theme toggle** now uses `menuitemcheckbox` with `aria-checked` to reflect state.
+- **Border vs track colors** differentiated for better visual hierarchy.
+- CSS selectors simplified (`.r-btn--sm` instead of `.r-btn.r-btn--sm`).
+
+### Removed
+- Old header/brand classes: `.brand`, `.wordmark`, `.logo`, `.slogan`.
+- Proxy import/export buttons (`#import-btn`, `#export-btn`) in favor of direct menu buttons.
+
+### Notes
+This release refreshes the **UI foundation and accessibility**, making the app easier to navigate with keyboard/screen readers and cleaner to extend in future releases.
+
+---
+
 ## [v1.2.0] — Branding & PWA Polish (2025-09-14)
 
 ### Added

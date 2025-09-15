@@ -62,7 +62,25 @@ Released: Sep 2025
 
 ---
 
-### 👨🏻‍💻 Version 1.3 — Power-User Features
+### ✅ Version 1.3 — Header & Accessibility Refresh
+- [x] Consolidated header into a single `#toolbar`
+  _Ac:_ App logo left, settings gear right; no duplicate headers or slogans.
+- [x] Settings dropdown menu
+  _Ac:_ Gear opens animated dropdown; click outside or Esc closes.
+- [x] Full keyboard navigation & accessibility
+  _Ac:_ ↑/↓/Home/End to move; Enter/Space to activatel menuitems have correct roles (`menuitem`, `menuitemcheckbox`).
+- [x] Theme toggle with ARIA state
+  _Ac:_ Switch Mode uses `menuitemcheckbox`; `aria-checked` reflects dark/light mode.
+- [x] Theming tokens updated
+  _Ac:_ Added `--hover-bg` with light/dark values; separated `--border` and `--track`.
+- [x] Removed legacy classes
+  _Ac:_ `.brand`, `.wordmark`, `.logo`, `.slogan` deleted from CSS/HTML.
+
+Released: Sep 2025
+
+---
+
+### 👨🏻‍💻 Version 1.4 — Power-User Features
 - [ ] Undo for deletes/finishes
   _AC:_ Toast with "Undo" restores book/session if clicked.
 - [ ] Inline editing of book details

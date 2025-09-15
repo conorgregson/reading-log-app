@@ -3,10 +3,12 @@
     --accent-light: #ef4444;
     --bg: #f9fafb;                   /* light bg */
     --card-bg: #ffffff;
-    --text: #1f2937;                 /* slate-800 */
-    --muted: #6b7280;                /* slate-500 */
-    --track: #e5e7eb;                /* neutral track */
-    --border: #e5e7eb;
+    --hover-bg: #f5f5f5;
+    --text: #1f2937;                 
+    --muted: #6b7280; 
+    --border: #d1d5db;               
+    --track: #e5e7eb;                
+    
 
     /* primary palette */
     --primary: #008080;              /* teal */
@@ -47,26 +49,14 @@ body {
     color: var(--text);
 }
 
-.mode-light {
-    --bg:#f9fafb;
-    --card-bg: #ffffff;
-    --text: #111827;
-    --border: #e5e7eb;
-    --track: #e5e7eb;
-}
-
 .mode-dark {
-    --bg:#0b1220;                   /* deep navy */
-    --card-bg: #121a2a;             /* dark card */
-    --text: #e5e7eb;                /* light text */
-    --border: #1f2a44;
+    --bg: #0b1220;                   /* deep navy */
+    --card-bg: #121a2a;              /* dark card */
+    --text: #e5e7eb;                 /* light text */
+    --border: #2c3650;
     --track: #1f2a44;
-    --primary: #5ce0df;             /* lighter teal for contrast */
+    --primary: #5ce0df;              /* lighter teal for contrast */
     --primary-dark: #42b7b7;
-}
-
-.mode-dark button {
-  color: #0b1220; /* deep navy for contrast on light-teal background */
 }
 
 body {
@@ -76,32 +66,120 @@ body {
     
 }
 
-.brand {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  margin: 0;   
-}
-
-.wordmark {
+/* App logo + compact wordmark */
+.app-logo {
     display: flex;
     align-items: center;
-    gap: 4px;
+    gap: 0.25rem;
     font-size: 1.5rem;
     font-weight: bold;
-    color: var(--primary);
+}
+.app-logo__icon {
+    height: 28px;
+    width: auto;
+    display: inline-block;
+}
+.app-logo__text {
+    letter-spacing: -0.5px;
 }
 
-.logo {
-  height: 40px;       
-  width: auto;
+/* Settings gear + dropdown */
+.settings {
+    position: relative;
+    display: inline-block;
+    margin-left: auto;
+}
+.settings__trigger {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+    background: transparent;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    font: inherit;
+    padding: 0.4rem 0.6rem;
+    transition: background 0.2s, box-shadow 0.2s;
+}
+.settings__trigger:hover,
+.settings__trigger:focus {
+    background: var(--hover-bg);
+}
+/* Stronger keyboard focus ring + subtle glow */
+.settings__trigger:focus-visible {
+    outline: 2px solid var(--primary);
+    outline-offset: 3px;
+    border-radius: 6px;
+    box-shadow: 0 0 0 3px rgba(0, 128, 128, 0.25);
+}
+.settings__label {
+    display: inline;
 }
 
-.slogan {
-    font-size: 0.9rem;
-    color: #444;
-    margin-top: 4px;
-    font-style: italic;
+/* Dropdown + animation */
+.settings__menu {
+    position: absolute;
+    top: 100%;
+    right: 0;
+    margin-top: 0.25rem;
+    background: var(--card-bg);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    display: flex;
+    flex-direction: column;
+    min-width: 170px;
+    z-index: 100;
+
+    opacity: 0;
+    transform: translateY(-5px);
+    pointer-events: none;
+    transition: opacity 0.15s ease, transform 0.15s ease;
+}
+.settings__menu.show {
+    opacity: 1;
+    transform: translateY(0);
+    pointer-events: auto;
+}
+
+/* Base Readr button + small modifier (framework-safe) */
+.r-btn {
+    font: inherit;
+    background: transparent;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+}
+.settings__menu .r-btn--sm {
+    text-align: left;
+    padding: 0.4rem 0.8rem;
+    background: none;
+    border: none;
+    border-radius: 0;
+    cursor: pointer;
+}
+.settings__menu .r-btn--sm:hover {
+    background: var(--hover-bg);
+}
+.settings__menu .r-btn--sm:focus-visible {
+    outline: 2px solid var(--primary);
+    outline-offset: -2px;
+    background: var(--hover-bg);
+    border-radius: 4px;
+    box-shadow: 0 0 0 2px rgba(0, 128, 128, 0.2);
+}
+.settings__menu .r-btn--sm:active {
+    outline: 2px solid var(--primary);
+    outline-offset: -2px;
+    background: var(--hover-bg);
+    border-radius: 4px;
+    box-shadow: 0 0 0 2px rgba(0, 128, 128, 0.25);
+}
+
+/* Visual state for the theme toggle when "checked" (dark active) */
+.settings__menu .r-btn[role="menuitemcheckbox"][aria-checked="true"] {
+    background: var(--hover-bg);
+    font-weight: 600;
 }
 
 /* Toolbar with gap */
@@ -175,7 +253,7 @@ li {
     border-radius: 8px;
     padding: 0.75rem;
     margin-bottom: 0.5rem;
-    box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
 }
 
 #books-empty {
@@ -414,7 +492,7 @@ li {
     border: 1px solid var(--border);
     border-radius: 12px;
     padding: 0.6rem 0.8rem;
-    box-shadow: 0 8px 24px rgba(0,0,0,.15);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
     min-width: 240px;
     max-width: 90vw;
 }
@@ -427,6 +505,7 @@ li {
     gap: 0.5rem;
 }
 .toast .btn-ghost {
+    color: #0b1220;
     background: transparent;
     border: 1px solid transparent;
 }
@@ -472,9 +551,8 @@ li {
   * { transition: none !important; animation: none !important; }
 }
 
-/* Show slogan only on wider screens */
 @media (max-width: 600px) {
-  .slogan {
-    display: none;
-  }
+    .settings__label {
+        display: none;
+    }
 }

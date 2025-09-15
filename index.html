@@ -35,28 +35,60 @@
         </noscript>
 
         <header id="toolbar" class="row">
-            <h1 class="brand">
-                <span class="wordmark">
-                    <img src="images/readr_logo_R_teal_master.png" alt="R logo" class="logo">
-                    eadr
-                </span>
-                <span class="slogan">Turn pages into progress</span>
-            </h1>
-            <div class="spacer"></div>
-            <button id="mode-toggle" type="button" aria-label="Toggle theme">Switch Mode</button>
-            <button id="export-btn" type="button">Backup Data</button>
-            <input type="file" id="import-file" accept=".json,application/json" hidden />
-            <button id="import-btn" type="button" aria-controls="import-file">Import Data</button>
+            <!-- App Logo -->
+            <div class="app-logo">
+                <img src="images/readr_logo_R_teal_master.png" alt="Readr logo" class="app-logo__icon">
+                <span class="app-logo__text">eadr</span>
+            </div>
 
-            <section id="settings" class="card">
-                <h2>Settings</h2>
-                <div class="row gap">
-                    <button id="reset-profile" type="button" title="Reset goal and theme to defaults. Your books and logs won't be touched.">Reset Profile</button>
-                    <button id="reset-data" type="button" title="Erase all books and reading sessions. Your goal and theme stay the same.">Reset Data</button>
-                    <button id="clear-runtime-cache" type="button">Clear Cache</button>
-                    <button id="check-updates" type="button">Check for Updates</button>
-                </div>
-            </section>
+            <div class="spacer"></div>
+
+            <!-- Settings Menu -->
+            <button class="settings__trigger" 
+                    aria-haspopup="menu" 
+                    aria-expanded="false" 
+                    aria-controls="settings-menu"
+                    aria-label="Settings">
+                <span aria-hidden="true">⚙️</span>
+                <span class="settings__label">Settings</span>
+            </button>
+
+            <!-- Screen-reader hint -->
+            <p id="menu-help" class="sr-only">
+                Use up and down arrows to navigate. Press Enter to activate, Escape to close.
+            </p>
+
+            <div class="settings__menu" id="settings-menu" hidden role="menu" aria-describedby="menu-help">
+                <!-- Theme Toggle-->
+                <button class="r-btn r-btn--sm" 
+                        id="mode-toggle" 
+                        role="menuitemcheckbox"
+                        aria-label="Toggle theme" 
+                        aria-checked="false">
+                    Switch Mode
+                </button>
+
+                <!-- Backup / Import -->
+                <button class="r-btn r-btn--sm" id="export-proxy" role="menuitem">Backup</button>
+                <button class="r-btn r-btn--sm" id="import-proxy" role="menuitem" aria-controls="import-file">Import</button>
+                <input type="file" id="import-file" accept=".json,application/json" hidden aria-describedby="import-desc" />
+                <p id="import-desc" class="sr-only">Upload a JSON backup file exported from Readr.</p>
+
+                <!-- Grouping separator -->
+                <div role="separator"></div>
+
+                <!-- Destructive / advanced actions -->
+                <button class="r-btn r-btn--sm" id="reset-profile" role="menuitem"
+                        title="Reset goal and theme to defaults. Your books and logs won't be touched.">
+                    Reset Profile
+                </button>
+                <button class="r-btn r-btn--sm" id="reset-data" role="menuitem"
+                        title="Erase all books and reading sessions. Your goal and theme stay the same.">
+                    Reset Data
+                </button>
+                <button class="r-btn r-btn--sm" id="clear-runtime-cache" role="menuitem">Clear Cache</button>
+                <button class="r-btn r-btn--sm" id="check-updates" role="menuitem">Check Updates</button>
+            </div>
         </header>
 
         <!-- Add a Book -->
