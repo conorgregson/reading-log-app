@@ -103,12 +103,38 @@ body {
     padding: 0.4rem 0.6rem;
     transition: background 0.2s, box-shadow 0.2s;
 }
+.settings__trigger,
+.settings__trigger .settings__label {
+  color: var(--text);
+}
+.settings__trigger [aria-hidden="true"] {
+  opacity: 0.8;
+  transition: opacity 0.2s, transform 0.2s;
+}
 .settings__trigger:hover,
 .settings__trigger:focus {
     background: var(--hover-bg);
 }
 
-/* Hover + focus: subtle highlight + accent bar */
+/* Hover/focus: brighten + spin gear, pulse background */
+.settings__trigger:hover,
+.settings__trigger:focus-visible {
+  background: var(--hover-bg);
+  animation: gearPulseLight 0.35s ease;
+}
+.settings__trigger:hover [aria-hidden="true"],
+.settings__trigger:focus-visible [aria-hidden="true"] {
+  opacity: 1;
+  transform: rotate(20deg);
+}
+
+/* Hover/focus: dark mode */
+.mode-dark .settings__trigger:hover,
+.mode-dark .settings__trigger:focus-visible {
+  animation: gearPulseDark 0.35s ease;
+}
+
+/* Hover/focus: subtle highlight + accent bar */
 .settings__menu .r-btn--sm:hover,
 .settings__menu .r-btn--sm:focus-visible {
   background: var(--hover-bg);
@@ -236,7 +262,6 @@ body {
 #toolbar .spacer {
     flex: 1;
 }
-
 
 h1, h2, h3 {
     color: var(--primary);
@@ -586,6 +611,20 @@ li {
     }
 }
 
+/* Light mode pulse (slightly darker) */
+@keyframes gearPulseLight {
+  0%   { background: var(--hover-bg); }
+  50%  { background: rgba(0, 0, 0, 0.04); }
+  100% { background: var(--hover-bg); }
+}
+
+/* Dark mode pulse (slightly lighter) */
+@keyframes gearPulseDark {
+  0%   { background: var(--hover-bg); }
+  50%  { background: rgba(255, 255, 255, 0.08); }
+  100% { background: var(--hover-bg); }
+}
+
 @media (prefers-reduced-motion: reduce) {
   * { transition: none !important; animation: none !important; }
 }
@@ -594,4 +633,16 @@ li {
     .settings__label {
         display: none;
     }
+}
+
+/* Accessibility: disable spin + pulse for reduced motion */
+@media (prefers-reduced-motion: reduce) {
+  .settings__trigger {
+    transition: background 0.2s ease;
+    animation: none !important;
+  }
+  .settings__trigger:hover [aria-hidden="true"],
+  .settings__trigger:focus-visible [aria-hidden="true"] {
+    transform: none;
+  }
 }
