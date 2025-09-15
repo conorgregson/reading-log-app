@@ -5,11 +5,14 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/), and
 
 ## [v1.3.0] — UI & Accessibility Overhaul (2025-09-15)
 
+## [v1.3.0] — UI & Accessibility Overhaul (2025-09-16)
+
 ### Added
 - New **gear-triggered Settings dropdown** with animation and full keyboard navigation (↑/↓/Home/End, Enter/Space).
 - **Accessibility overhaul**: ARIA roles (`menu`, `menuitem`, `menuitemcheckbox`), `aria-expanded`, `aria-checked`, screen-reader hints.
 - Theme token **`--hover-bg`** with light/dark values.
 - Stronger **focus-visible** states for gear and menu items.
+- **Refined menu item interactions**: hover/focus now show a teal accent bar with bold text; active/checked items (e.g., theme toggle) display a persistent bar and stronger emphasis.
 
 ### Changed
 - **Header** consolidated to a single `#toolbar` with app logo left, Settings gear right.

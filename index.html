@@ -42,52 +42,54 @@
             </div>
 
             <div class="spacer"></div>
-
+        
             <!-- Settings Menu -->
-            <button class="settings__trigger" 
-                    aria-haspopup="menu" 
-                    aria-expanded="false" 
-                    aria-controls="settings-menu"
-                    aria-label="Settings">
-                <span aria-hidden="true">⚙️</span>
-                <span class="settings__label">Settings</span>
-            </button>
-
-            <!-- Screen-reader hint -->
-            <p id="menu-help" class="sr-only">
-                Use up and down arrows to navigate. Press Enter to activate, Escape to close.
-            </p>
-
-            <div class="settings__menu" id="settings-menu" hidden role="menu" aria-describedby="menu-help">
-                <!-- Theme Toggle-->
-                <button class="r-btn r-btn--sm" 
-                        id="mode-toggle" 
-                        role="menuitemcheckbox"
-                        aria-label="Toggle theme" 
-                        aria-checked="false">
-                    Switch Mode
+            <div class="settings">
+                <button class="settings__trigger" 
+                        aria-haspopup="menu" 
+                        aria-expanded="false" 
+                        aria-controls="settings-menu"
+                        aria-label="Settings">
+                    <span aria-hidden="true">⚙️</span>
+                    <span class="settings__label">Settings</span>
                 </button>
 
-                <!-- Backup / Import -->
-                <button class="r-btn r-btn--sm" id="export-proxy" role="menuitem">Backup</button>
-                <button class="r-btn r-btn--sm" id="import-proxy" role="menuitem" aria-controls="import-file">Import</button>
-                <input type="file" id="import-file" accept=".json,application/json" hidden aria-describedby="import-desc" />
-                <p id="import-desc" class="sr-only">Upload a JSON backup file exported from Readr.</p>
+                <!-- Screen-reader hint -->
+                <p id="menu-help" class="sr-only">
+                    Use up and down arrows to navigate. Press Enter to activate, Escape to close.
+                </p>
 
-                <!-- Grouping separator -->
-                <div role="separator"></div>
+                <div class="settings__menu" id="settings-menu" hidden role="menu" aria-describedby="menu-help">
+                    <!-- Theme Toggle-->
+                    <button class="r-btn r-btn--sm" 
+                            id="mode-toggle" 
+                            role="menuitemcheckbox"
+                            aria-label="Toggle theme" 
+                            aria-checked="false">
+                        Switch Mode
+                    </button>
 
-                <!-- Destructive / advanced actions -->
-                <button class="r-btn r-btn--sm" id="reset-profile" role="menuitem"
-                        title="Reset goal and theme to defaults. Your books and logs won't be touched.">
-                    Reset Profile
-                </button>
-                <button class="r-btn r-btn--sm" id="reset-data" role="menuitem"
-                        title="Erase all books and reading sessions. Your goal and theme stay the same.">
-                    Reset Data
-                </button>
-                <button class="r-btn r-btn--sm" id="clear-runtime-cache" role="menuitem">Clear Cache</button>
-                <button class="r-btn r-btn--sm" id="check-updates" role="menuitem">Check Updates</button>
+                    <!-- Backup / Import -->
+                    <button class="r-btn r-btn--sm" id="export-proxy" role="menuitem">Backup</button>
+                    <button class="r-btn r-btn--sm" id="import-proxy" role="menuitem" aria-controls="import-file">Import</button>
+                    <input type="file" id="import-file" accept=".json,application/json" hidden aria-describedby="import-desc" />
+                    <p id="import-desc" class="sr-only">Upload a JSON backup file exported from Readr.</p>
+
+                    <!-- Grouping separator -->
+                    <div role="separator"></div>
+
+                    <!-- Destructive / advanced actions -->
+                    <button class="r-btn r-btn--sm" id="reset-profile" role="menuitem"
+                            title="Reset goal and theme to defaults. Your books and logs won't be touched.">
+                        Reset Profile
+                    </button>
+                    <button class="r-btn r-btn--sm" id="reset-data" role="menuitem"
+                            title="Erase all books and reading sessions. Your goal and theme stay the same.">
+                        Reset Data
+                    </button>
+                    <button class="r-btn r-btn--sm" id="clear-runtime-cache" role="menuitem">Clear Cache</button>
+                    <button class="r-btn r-btn--sm" id="check-updates" role="menuitem">Check Updates</button>
+                </div>
             </div>
         </header>
 

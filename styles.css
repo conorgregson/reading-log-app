@@ -52,6 +52,7 @@ body {
 .mode-dark {
     --bg: #0b1220;                   /* deep navy */
     --card-bg: #121a2a;              /* dark card */
+    --hover-bg: #1f2a44;
     --text: #e5e7eb;                 /* light text */
     --border: #2c3650;
     --track: #1f2a44;
@@ -70,7 +71,7 @@ body {
 .app-logo {
     display: flex;
     align-items: center;
-    gap: 0.25rem;
+    gap: 0;
     font-size: 1.5rem;
     font-weight: bold;
 }
@@ -81,6 +82,7 @@ body {
 }
 .app-logo__text {
     letter-spacing: -0.5px;
+    margin-left: -2px;
 }
 
 /* Settings gear + dropdown */
@@ -105,6 +107,39 @@ body {
 .settings__trigger:focus {
     background: var(--hover-bg);
 }
+
+/* Hover + focus: subtle highlight + accent bar */
+.settings__menu .r-btn--sm:hover,
+.settings__menu .r-btn--sm:focus-visible {
+  background: var(--hover-bg);
+  font-weight: 500;
+  position: relative;
+}
+.settings__menu .r-btn--sm:hover::before,
+.settings__menu .r-btn--sm:focus-visible::before {
+  content: "";
+  position: absolute;
+  left: 0; top: 0; bottom: 0;
+  width: 3px;
+  background: var(--primary);
+  border-radius: 0 2px 2px 0;
+}
+
+/* Active/checked (e.g. theme toggle): persistent bar + stronger bold */
+.settings__menu .r-btn[role="menuitemcheckbox"][aria-checked="true"] {
+  background: var(--hover-bg);
+  font-weight: 600;
+  position: relative;
+}
+.settings__menu .r-btn[role="menuitemcheckbox"][aria-checked="true"]::before {
+  content: "";
+  position: absolute;
+  left: 0; top: 0; bottom: 0;
+  width: 3px;
+  background: var(--primary);
+  border-radius: 0 2px 2px 0;
+}
+
 /* Stronger keyboard focus ring + subtle glow */
 .settings__trigger:focus-visible {
     outline: 2px solid var(--primary);
@@ -150,10 +185,14 @@ body {
     border-radius: 6px;
     cursor: pointer;
 }
+.settings__menu, 
+.settings__menu .r-btn--sm {
+    color: var(--text)
+}
 .settings__menu .r-btn--sm {
     text-align: left;
     padding: 0.4rem 0.8rem;
-    background: none;
+    background: transparent;
     border: none;
     border-radius: 0;
     cursor: pointer;
