@@ -1,5 +1,5 @@
-// Service Worker for Readr v1.3.1
-const VERSION = "v1.3.1";
+// Service Worker for Readr v1.3.3
+const VERSION = "v1.3.3";
 const CACHE_STATIC  = `readr-static-${VERSION}`;
 const CACHE_RUNTIME = `readr-runtime-${VERSION}`;
 const MAX_RUNTIME_ENTRIES = 60;
@@ -8,9 +8,9 @@ const MAX_RUNTIME_ENTRIES = 60;
 const ASSETS = [
   "./",
   "./index.html",
-  "./styles.css?v=1.3.2",
-  "./app.js?v=1.3.2",
-  "./storage.js?v=1.3.2",
+  "./styles.css?v=1.3.3",
+  "./app.js?v=1.3.3",
+  "./storage.js?v=1.3.3",
   "./manifest.json",
   "./images/favicon_teal.ico",
   "./images/favicon_white.ico",

@@ -227,9 +227,8 @@ if (bookForm) {
     });
     saveBooks();
     buildBookOptions();    // keep log form in sync
-    if (typeof window.render === "function") {
-      window.render();
-    }
+    buildBookOptions();
+    render();
     e.target.reset();
   }); 
 }
@@ -319,7 +318,7 @@ function attachControlEvents() {
   const tbrMonth = document.getElementById("tbr-month");
 
   function refreshList() { 
-    if (typeof render === "function") window.render(); 
+    render(); 
   }
 
   [searchEl, sortEl, statusEl, fa, fg, fs, tbrOnly, tbrMonth].forEach(el => {
@@ -382,9 +381,7 @@ if (logForm) {
       dateEl.value = dayKey(); // keep it on local 'today'
     }
     renderProfileUI();
-    if (typeof window.render === "function") {
-      window.render();
-    }
+    render();
   });
 }
 
@@ -486,9 +483,7 @@ if (resetBtn) {
       saveBooks();
       saveLogs();
       buildBookOptions();
-      if (typeof window.render === "function") {
-        window.render();
-      }
+      render();
       renderProfileUI();
     }
   });
@@ -719,9 +714,7 @@ function updateGoalUI() {
   const barFill = document.getElementById("today-bar-fill");
   const sCur = document.getElementById("streak-current");
   const sMax = document.getElementById("streak-max");
-  if (!amountEl || !goalEl || !barFill || !sCur || !sMax) {
-    return;
-  }
+  if (!barFill || !amountEl || !goalEl) { return; } // only require what's needed for the bar
 
   if (!profile.dailyGoal) {
     amountEl.textContent = "0";
@@ -1274,3 +1267,5 @@ wireImportExport({
     showToast("Service Worker registration failed.", "error", { timeout: 5000 });
   }
 })();
+
+window.render = render;

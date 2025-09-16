@@ -410,11 +410,15 @@ li {
 #today-bar { 
     width: 100%; 
     height: 10px; 
+    position: relative;
     background: var(--track); 
     border-radius: 6px; 
     overflow: hidden; 
 }
 #today-bar-fill { 
+    display: block;
+    height: 100%;
+    border-radius: 6px 0 0 6px;
     transition: width .35s ease-in-out; 
 }
 #today-bar-fill.zero {

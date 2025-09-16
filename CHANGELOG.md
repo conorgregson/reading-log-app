@@ -3,6 +3,17 @@ All notable changes to **Readr** (reading log app) will be documented in this fi
 
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/), and we aim to follow [Semantic Versioning](https://semver.org/).  
 
+## [v1.3.3] — Bug Fixes (2025-09-16)
+
+### Fixed
+- Restored daily goal progress bar updates after logging sessions.
+- Fixed missing color states (green/amber/red) on progress bar fill.
+- Corrected render behavior in module mode by replacing `window.render` guards with direct calls.
+- Added CSS height rule to ensure progress bar fill is visible.
+- Minor UI consistency fixes (book filters refresh on new book add).
+
+---
+
 ## [v1.3.2] — Security & Bugfixes (2025-09-15)
 
 ### Fixed
