@@ -3,6 +3,42 @@ All notable changes to **Readr** (reading log app) will be documented in this fi
 
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/), and we aim to follow [Semantic Versioning](https://semver.org/).  
 
+## [v1.4.0] — Power-User Features (2025-09-23)
+
+### Added
+- Undo for mistakes → recover a book or session after delete/finish
+- Inline editing for book details
+- Smarter fuzzy search (typo + partial token tolerance)
+- Session history view with table, edit/delete, and pagination
+- Install app button in Settings, styled green with hybrid state handling
+- **Install status pill → small live badge beside Install app showing Unavailable, Ready, or Installed**
+- One-click Reset Preferences in Settings
+- Predictable updates → Check updates reloads when a new Service Worker takes over
+
+### Changed
+- Modular refactor: slimmed down `app.js` into dedicated modules under `features/`, `utils/`, and `ui/`
+- Reset Preferences styled grey for clear affordance
+- Global focus ring (teal / aqua in dark mode) and hover underline for links
+- Dev smoke tests added for Undo, Install button, and storage migration
+- New release tooling: `dev/bump-version.js` auto-bumps SW cache + HTML script query params
+
+### Fixed
+- Search highlights now map normalized matches back to original text (accents/dashes)
+- Tooltip positioning corrected on resize/scroll (no stale values)
+- Service Worker hardened: cache version bumped, modules precached, no unsafe calls
+- Import validator corrected: OR logic, proper `items` key, normalized statuses
+- Session history pagination labels + Next/Prev use shared `totalPages`
+
+### Notes
+- No breaking changes — existing backups continue to work
+- First load after deploy refreshes pre-cache; already-open tabs auto-reload on SW `controllerchange`
+- Reset Preferences clears `readr:filters:v1` and re-renders list
+- Undo applies only to the most recent delete/finish (~6s)
+- Backups include version field; old backups migrate automatically
+- Release process: bump SW VERSION, update `?v=` query params, then run `npm run release:check`
+
+---
+
 ## [v1.3.3] — Bug Fixes (2025-09-16)
 
 ### Fixed

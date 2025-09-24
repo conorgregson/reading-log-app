@@ -1,38 +1,33 @@
+import { normalizeStatus } from "./constants.js";
+import { validateBackup } from "./storage.js";
+
 /**
- * Soft validation for backup/import JSON.
- * Accepts { items: [...] } or { logs: [...] } or { entries: [...] }.
- * Ensures each item has a date and either pagesRead or minutes.
+ * @deprecated Use validateBackup from utils/storage.js.
+ * This wrapper exists for backward compatibility and will be removed in a future version.
  */
 export function validateLogJson(obj) {
-    const errors = [];
-
-    if (!obj || typeof obj !== "object") {
-        errors.push("Root must be an object.");
-        return { ok: false, errors };
-    }
-
-    // Only validate fields the app actually needs.
-    items.forEach((it, i) => {
-        if (!it || typeof it !== "object") {
-            errors.push(`Item #${i + 1}: must be an object.`);
-            return;
-        }
-        if (!it.date) errors.push(`Item #${i + 1}: missing 'date'.`);
-        const hasPages = "pagesRead" in it;
-        const hasMinutes = "minutes" in it;
-        if (!hasPages && !hasMinutes) {
-            errors.push(`Item #${i + 1}: needs 'pagesRead' or 'minutes'.`);
-        }
-    });
-
-    return { ok: errors.length === 0, errors, items };
+    // Delegate to the schema-aware validator; accept legacy keys too.
+    const compat = {
+        ...obj,
+        items: Array.isArray(obj?.items)
+          ? obj.items
+          : Array.isArray(obj?.logs)
+          ? obj.logs
+          : Array.isArray(obj?.entries)
+          ? obj.entries
+          : [],
+    };
+    const { errors, warnings, items } = validateBackup(compat, { strict: false });
+    // Preserve old return shape so legacy callers keep working.
+    return { ok: errors.length === 0, errors, items, warnings };
 }
 
 /**
- * Normalize a single item to the app's schema.
- * - trim date to YYYY-MM-DD (ignore time)
+ * @deprecated Prefer migrating full backups via importBackup() and display warnings.
+ * Kept for callers that still normalize individual log items on the fly.
+ * - trims date to YYYY-MM-DD
  * - coerce numbers
- * - fill missing fields
+ * - maps status to your canonch
  */
 export function normalizeItem(it) {
     return {
@@ -42,6 +37,9 @@ export function normalizeItem(it) {
         minutes: Number(it.minutes ?? 0) || 0,
         title: it.title ?? "",
         author: it.author ?? "",
-        status: it.status ?? "in-progress",
+        // map legacy/import statuses to your canon (planned/reading/finished)
+        status: (typeof normalizeStatus === "function"
+            ? normalizeStatus(it.status)
+            : (it.status ?? "planned"))
     };
 }

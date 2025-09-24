@@ -1,0 +1,7 @@
+{
+  "scripts": {
+    "smoke:core": "node dev/smoke.core.js --n=2000",
+    "smoke:core:fast": "node dev/smoke.core.js --n=800",
+    "smoke:a11y": "echo \"Open the app in a browser, then run: runAccessibilitySmoke() in DevTools console\""
+  }
+}

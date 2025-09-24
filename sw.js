@@ -1,5 +1,5 @@
-// Service Worker for Readr v1.3.3
-const VERSION = "v1.3.3";
+// Service Worker for Readr v1.4.0
+const VERSION = "v1.4.0";
 const CACHE_STATIC  = `readr-static-${VERSION}`;
 const CACHE_RUNTIME = `readr-runtime-${VERSION}`;
 const MAX_RUNTIME_ENTRIES = 60;
@@ -8,10 +8,27 @@ const MAX_RUNTIME_ENTRIES = 60;
 const ASSETS = [
   "./",
   "./index.html",
-  "./styles.css?v=1.3.3",
-  "./app.js?v=1.3.3",
-  "./storage.js?v=1.3.3",
+  "./styles.css?v=1.4.0",
+  "./app.js?v=1.4.0",
+  "./storage.js?v=1.4.0",          // shim for backward-compat
   "./manifest.json",
+  "./features/a11y.js?v=1.4.0",
+  "./features/search-ui.js?v=1.4.0",
+  "./features/settings.js?v=1.4.0",
+  "./features/books.js?v=1.4.0",
+  "./features/import.js?v=1.4.0",
+  "./features/tooltip.js?v=1.4.0",
+  "./features/profile.js?v=1.4.0",
+  "./features/sessions.js?v=1.4.0",
+  "./ui/wire-import-export.js?v=1.4.0",
+  "./utils/dom.js?v=1.4.0",
+  "./utils/constants.js?v=1.4.0",
+  "./utils/search.js?v=1.4.0",
+  "./utils/aggregate.js?v=1.4.0",
+  "./utils/formatMs.js?v=1.4.0",
+  "./utils/download.js?v=1.4.0",
+  "./utils/validate.js?v=1.4.0",
+  "./utils/storage.js?v=1.4.0",
   "./images/favicon_teal.ico",
   "./images/favicon_white.ico",
   "./images/readr_icon_192.png",
@@ -24,6 +41,12 @@ const ASSETS = [
   "./images/social-card-white-teal-stacked.png",
   "./images/social-card-dark-stacked.png"
 ];
+
+// Dev assert: make sure ASSETS use this VERSION token
+if (location.hostname === "127.0.0.1" || location.hostname === "localhost") {
+  const bad = ASSETS.filter(x => /\?v=/.test(x) && !x.includes(VERSION));
+  if (bad.length) console.warn("[SW] ASSETS missing ?v=", VERSION, bad);
+}
 
 // ---------- Helpers ----------
 async function pruneCache(cacheName, maxEntries) {
@@ -61,10 +84,15 @@ self.addEventListener("message", (event) => {
   }
 });
 
+// NOTE: page handles reload via navigator.serviceWorker.controllerchange
+
 // ---------- Fetch routing ----------
 self.addEventListener("fetch", (event) => {
   const { request } = event;
   const url = new URL(request.url);
+
+  // Only cache GETs
+  if (request.method !== "GET") return;
 
   // Only handle http(s)
   if (url.protocol !== "http:" && url.protocol !== "https:") return;
@@ -95,7 +123,7 @@ self.addEventListener("fetch", (event) => {
       try {
         return await fetch(request, { cache: "no-store" });
       } catch {
-        const cached = await caches.match(request);
+        const cached = await caches.match(request, { ignoreSearch: false });
         return cached || new Response(JSON.stringify({ error: "offline" }), {
           status: 503,
           headers: { "Content-Type": "application/json" }
@@ -128,9 +156,9 @@ self.addEventListener("fetch", (event) => {
     return;
   }
 
-  // 4) Default → try cache, then network
+  // 4) Default → try cache (respect ?v=), then network
   event.respondWith((async () => {
-    const cached = await caches.match(request);
+    const cached = await caches.match(request, { ignoreSearch: false });
     return cached || fetch(request);
   })());
 });
