@@ -64,7 +64,7 @@
                     <h2 id="settings-menu-label" class="sr-only">Settings</h2>
 
                     <!-- Group 1: Mode & Install -->
-                    <button id="toggle-mode"
+                    <button id="mode-toggle"
                             class="r-btn r-btn--sm"
                             role="menuitemcheckbox"
                             aria-checked="false"
@@ -81,21 +81,21 @@
                         <span id="install-status"
                               class="status-pill unavailable"
                               aria-live="polite">
-                              Unavailable
+                            Unavailable
                         </span>
                     </button>
 
                     <hr class="menu-sep" role="separator" aria-orientation="horizontal">
 
                     <!-- Group 2: Data management -->
-                    <button id="backup-btn"
+                    <button id="export-proxy"
                             class="r-btn r-btn--sm"
                             role="menuitem"
                             tabindex="-1">
                         Backup data
                     </button>
 
-                    <button id="import-btn"
+                    <button id="import-proxy"
                             class="r-btn r-btn--sm"
                             role="menuitem"
                             aria-controls="import-file"
@@ -111,7 +111,7 @@
                     <hr class="menu-sep" role="separator" aria-orientation="horizontal">
 
                     <!-- Group 3: Resets -->
-                    <button id="reset-preferences"
+                    <button id="prefs-reset"
                             class="r-btn r-btn--sm btn-reset"
                             role="menuitem"
                             tabindex="-1">
@@ -132,7 +132,7 @@
                         Reset Data
                     </button>
 
-                    <button id="clear-cache"
+                    <button id="clear-runtime-cache"
                             class="r-btn r-btn--sm"
                             role="menuitem"
                             tabindex="-1">
@@ -146,7 +146,7 @@
                             class="r-btn r-btn--sm"
                             role="menuitem"
                             tabindex="-1">
-                        Check updates
+                        Check Updates
                     </button>
                 </div>
             </div>

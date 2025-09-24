@@ -3,6 +3,22 @@ All notable changes to **Readr** (reading log app) will be documented in this fi
 
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/), and we aim to follow [Semantic Versioning](https://semver.org/).  
 
+## [v1.4.1] — Button & Progress Fixes (2025-09-24)
+
+### Fixed
+- Corrected Settings menu button IDs so **Backup data**, **Import data**, and **Reset Preferences** now work as intended.
+- Progress bar thresholds updated: properly transitions **red → yellow → green** at defined milestones.
+- Ensured Switch Mode and Clear Cache remain functional after cache/service worker refresh.
+
+### Changed
+- Added four new **screenshots** to the README:
+  - Main UI
+  - Daily Goal, Book Goals, Add Reading Session, and Session History
+  - Books list (populated)
+  - Dark mode
+
+---
+
 ## [v1.4.0] — Power-User Features (2025-09-23)
 
 ### Added

@@ -83,7 +83,18 @@ See the full [Roadmap](./docs/roadmap.md) for milestones and timelines.
 --- 
 
 ## 📸 Screenshots
-_Coming soon - preview images of the Readr UI._
+
+### Main UI
+![Main UI](docs/images/ui-main.png)
+
+### Goals & Sessions
+![Goals & Sessions](docs/images/ui-goals.png)
+
+### Books List (populated)
+![Books List](docs/images/ui-books.png)
+
+### Dark Mode
+![Dark Mode](docs/images/ui-dark.png)
 
 ---
 

@@ -67,7 +67,7 @@ export function updateGoalUI() {
   barFill.style.width = `${pct}%`;
   if (pct === 0) barFill.classList.add("zero");
   else if (pct >= 100) barFill.classList.add("success");
-  else if (pct >= 66) barFill.classList.add("warning");
+  else if (pct >= 50) barFill.classList.add("warning");
   else barFill.classList.add("error");
 
   if (bar) {
