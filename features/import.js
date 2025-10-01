@@ -1,5 +1,6 @@
 import { validateBackup, importBackup } from "../utils/storage.js";
 import { normalizeStatus, applyTextFixes } from "../utils/constants.js";
+import { normalizeSeriesType, normalizeFormat, normalizeISBN } from "./books.js";
 
 export async function handleJsonImport(file) {
     const text = await file.text().catch(() => null);
@@ -20,7 +21,7 @@ export async function handleJsonImport(file) {
     }
 
     // Migrate + persist (also updates META)
-    const result = importBackup({ ...data, items }, { strict: false });
+    const result = importBackup({ ...data, items }, { strict: false }); // runs schema migration
     const count = Array.isArray(result.items) ? result.items.length : 0;
 
     return {
@@ -52,6 +53,21 @@ export function normalizeSeedData(seed) {
             // Canonicalize status
             copy.status = normalizeStatus(copy.status);
 
+            // v1.5.0: normalize new book flags with sensible fallbacks
+            // seriesType: "series" if a series string exists, otherwise "standalone"
+            if (copy.seriesType != null) {
+                copy.seriesType = normalizeSeriesType(copy.seriesType);
+            } else {
+                copy.seriesType = normalizeSeriesType(copy.series ? "series" : "standalone");
+            }
+
+            // format: default "physical" when unknown 
+            if (copy.format != null) {
+                copy.format = normalizeFormat(copy.format);
+            } else {
+                copy.format = normalizeFormat("physical");
+            }
+
             // Normalize timestamp-ish fields to ISO if present
             for (const key of ["createdAt", "updatedAt", "finishedAt"]) {
                 if (copy[key] != null) {
@@ -63,6 +79,10 @@ export function normalizeSeedData(seed) {
             // Normalize ISBN if present (remove spaces/hypens, upper-case)
             if (typeof copy.isbn === "string") {
                 copy.isbn = copy.isbn.replace(/[\s-]+/g, "").toUpperCase();
+            }
+            // v1.5.0: unified ISBN normalization (keeps formatting leniency; UI can warn)
+            if (typeof copy.isbn === "string") {
+                copy.isbn = normalizeISBN(copy.isbn);
             }
 
             return copy;

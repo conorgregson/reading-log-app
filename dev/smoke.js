@@ -1,6 +1,6 @@
 import { runStorageSmoke } from "./smoke.storage.js";
 import { runCoreSmoke } from "./smoke.core.js";
-import { runCUndoSmoke } from "./smoke.undo.js";
+import { runUndoSmoke } from "./smoke.undo.js";
 
 export async function runSmoke(n = 2000, { ui = true } = {}) {
   const core = await runCoreSmoke(n);
@@ -13,6 +13,7 @@ export async function runSmoke(n = 2000, { ui = true } = {}) {
     // Also test PWA install button behavior if the page wire it
     const { runInstallSmoke } = await import("./smoke.install.js");
     await runInstallSmoke();
+    await runUndoSmoke();
   }
 
   return core;

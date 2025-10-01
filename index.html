@@ -25,7 +25,7 @@
         <link rel="apple-touch-icon" href="images/readr_icon_192.png">
         <link rel="manifest" href="manifest.json">
 
-        <link rel="stylesheet" href="styles.css?v=1.4.0">
+        <link rel="stylesheet" href="styles.css">
     </head>
     <body>
         <noscript>
@@ -164,15 +164,61 @@
                 <input type="text" id="title" placeholder="Title" required />
 
                 <label class="sr-only" for="author">Author</label>
-                <input type="text" id="author" placeholder="Author" required /> 
+                <input type="text" id="author" placeholder="Author" required list="author-options-add" /> 
+                <datalist id="author-options-add"></datalist>
+
+                <label class="sr-only" for="series">Series</label>
+                <input type="text" id="series" placeholder="Series (optional)" list="series-options-add"/>
+                <datalist id="series-options-add"></datalist>
+
+                <label class="sr-only" for="seriesType">Series or Standalone</label>
+                <select id="seriesType" aria-label="Series or Standalone">
+                    <option value="series">Part of a series</option>
+                    <option value="standalone">Standalone</option>
+                </select>
 
                 <label class="sr-only" for="genre">Genre</label>
-                <input type="text" id="genre" placeholder="Genre" list="genre-options" />
+                <input type="text" id="genre" placeholder="Genre (optional)" list="genre-options" />
                 <datalist id="genre-options"></datalist>
+
+                <label class="sr-only" for="format">Format</label>
+                <select id="format" aria-label="Format">
+                    <option value="">Format (choose)</option>
+                    <option value="physical">Physical</option>
+                    <option value="digital">Digital</option>
+                </select>
+
+                <!--Format subtype -->
+                <label class="sr-only" for="formatSubtype">Format subtype</label>
+                <select id="formatSubtype" aria-label="Format subtype (optional)">
+                    <option value="">Subtype (optional)</option>
+                    <!-- Physical -->
+                    <option value="Hardcover" data-parent="physical">Hardcover</option>
+                    <option value="Paperback" data-parent="physical">Paperback</option>
+                    <!-- Digital -->
+                    <option value="eBook" data-parent="digital">eBook</option>
+                    <option value="Audiobook" data-parent="digital">Audiobook</option>
+                    <option value="PDF" data-parent="digital">PDF</option>
+                </select>
+
+                <label class="sr-only" for="isbn">ISBN</label>
+                <input 
+                    type="text" 
+                    id="isbn" 
+                    inputmode="numeric" 
+                    aria-describedby="isbn-hint"
+                    placeholder="ISBN (optional, 10 or 13 digits; dashes ok)" />
+                <div id="isbn-hint"
+                     class="error-text"
+                     aria-live="polite"
+                     aria-atomic="true"
+                     hidden >
+                     ISBN must be 10 or 13 digits; dashes/spaces allowed.
+                </div>
 
                 <label class="sr-only" for="status">Status</label>
                 <select id="status" aria-label="Status">
-                    <option value="planned">Planned</option>
+                    <option value="planned" selected>Planned</option>
                     <option value="reading">Reading</option>
                     <option value="finished">Finished</option>
                 </select>
@@ -180,7 +226,7 @@
                 <label class="sr-only" for="plannedMonth">Planned month (TBR)</label>
                 <input type="month" id="plannedMonth" aria-label="Planned month (TBR)" />
 
-                <button type="submit">Add Book</button>
+                <button type="submit" class="r-btn r-btn--primary">Add Book</button>
             </form>
         </section>
 
@@ -248,11 +294,111 @@
 
         <section id="book-list">
             <h2>Books</h2>
+            <!-- Bulk toolbar -->
+             <div id="bulk-toolbar" class="row" aria-label="Bulk edit toolbar">
+                <label class="check-all">
+                    <input type="checkbox" id="check-all" aria-label="Select all books" />
+                    <span class="muted">Select all</span>
+                </label>
+                <span id="bulk-selected-count" class="muted" aria-live="polite" aria-atomic="true">No books selected</span>
+                <div class="spacer"></div>
+                <button id="bulk-edit-btn" class="r-btn r-btn--sm r-btn--ghost" disabled aria-disabled="true" type="button">
+                    Bulk Edit
+                </button>
+             </div>
+
+            <!-- Status button template -->
+            <template id="status-btn-temp">
+                <button class="r-btn r-btn--sm status-btn" type="button" data-action="">
+                    <span class="status-label">Start Reading</span>
+                </button>
+            </template>
             <ul id="books"></ul>
             <div id="books-empty" class="muted" hidden>
                 No books yet — add your first one above.
             </div>
         </section>
+
+        <!-- Bulk Edit Dialog -->
+        <dialog id="bulk-edit-dialog" 
+                role="dialog"
+                aria-modal="true"
+                aria-labelledby="bulk-title"
+                aria-describedby="bulk-desc">
+            <form method="dialog" id="bulk-form">
+                <h3 id="bulk-title">Bulk Edit</h3>
+                <p id="bulk-desc" class="muted">Apply one change to all selected books.</p>
+
+                <fieldset>
+                    <legend class="sr-only">Bulk action</legend>
+                    <label><input type="radio" name="bulkAction" value="status" checked /> Change status</label>
+                    <label><input type="radio" name="bulkAction" value="genre" /> Change genre</label>
+                    <label><input type="radio" name="bulkAction" value="series" /> Change series</label>
+                    <label><input type="radio" name="bulkAction" value="seriesType" /> Change series type</label>
+                    <label><input type="radio" name="bulkAction" value="format" /> Change format</label>
+                    <label><input type="radio" name="bulkAction" value="formatSubtype" /> Change format subtype</label>
+                    <label><input type="radio" name="bulkAction" value="author" /> Change author</label>
+                </fieldset>
+
+                <div id="bulk-status-wrap">
+                    <label for="bulk-status">New status</label>
+                    <select id="bulk-status">
+                        <option value="planned">Planned</option>
+                        <option value="reading">Reading</option>
+                        <option value="finished">Finished</option>
+                    </select>
+                </div>
+
+                <div id="bulk-genre-wrap" hidden>
+                    <label for="bulk-genre">New genre</label>
+                    <input id="bulk-genre" list="genre-options" placeholder="e.g., Fantasy">
+                </div>
+
+                <div id="bulk-series-wrap" hidden>
+                    <label for="bulk-series">New series</label>
+                    <input id="bulk-series" list="series-options" placeholder="e.g., The Expanse">
+                    <datalist id="series-options"></datalist>
+                </div>
+
+                <div id="bulk-series-type-wrap" hidden>
+                    <label for="bulk-series-type">New series type</label>
+                    <input id="bulk-series-type" list="series-type-options" placeholder="e.g., Standalone">
+                    <datalist id="series-type-options"></datalist>
+                </div>
+
+                <div id="bulk-format-wrap" hidden>
+                    <label for="bulk-format">New format</label>
+                    <input id="bulk-format" list="format-options" placeholder="e.g., Physical">
+                    <datalist id="format-options"></datalist>
+                </div>
+
+                <div id="bulk-formatSubtype-wrap" hidden>
+                    <label for="bulk-formatSubtype">New format subtype</label>
+                    <input id="bulk-formatSubtype" list="format-subtype-options" placeholder="eg., Hardcover, eBook">
+                    <datalist id="format-subtype-options">
+                        <option value="Hardcover"></option>
+                        <option value="Paperback"></option>
+                        <option value="eBook"></option>
+                        <option value="Audiobook"></option>
+                        <option value="PDF"></option>
+                    </datalist>
+                </div>
+
+                <div id="bulk-author-wrap" hidden>
+                    <label for="bulk-author">New author</label>
+                    <input id="bulk-author" list="author-options" placeholder="e.g., Arthur C. Clarke">
+                    <datalist id="author-options"></datalist>
+                    <p class="muted" id="author-tip">
+                        Tip: Only bulk-change author if these books truly share the same author.
+                    </p>
+                </div>
+
+                <div class="dialog__actions">
+                    <button id="bulk-cancel" type="button" value="cancel" class="r-btn r-btn--ghost">Cancel</button>
+                    <button id="bulk-apply" type="submit" class="r-btn r-btn--primary">Apply to selected</button>
+                </div>
+            </form>
+        </dialog>
 
         <section id="goal-widget">
             <h2 id="goal-title">Daily Goal</h2>
@@ -280,8 +426,14 @@
                     </div>
                 </label>
 
-                <button id="save-goal" type="button">Save Goal</button>
-                <button id="quick-toggle-metric" type="button" aria-pressed="false" title="Quick toggle between Pages/Minutes">Toggle Metric</button>
+                <button id="save-goal" type="button" class="r-btn r-btn--primary">Save Goal</button>
+                <button id="quick-toggle-metric" 
+                        type="button" 
+                        class="r-btn r-btn--ghost" 
+                        aria-pressed="false" 
+                        title="Quick toggle between Pages/Minutes">
+                    Toggle Metric
+                </button>
             </div>
 
             <div id="today-progress">
@@ -325,7 +477,7 @@
                 <label> Yearly target
                     <input id="goal-yearly-books" type="number" min="0" placeholder="e.g., 20" />
                 </label>
-                <button id="save-book-goals" type="button">Save Book Goals</button>
+                <button id="save-book-goals" type="button" class="r-btn r-btn--primary">Save Book Goals</button>
             </div>
 
             <div class="row" id="book-goals-stats">
@@ -349,12 +501,15 @@
                 
                 <label class="sr-only" for="log-date">Date</label>
                 <input id="log-date" type="date" />
-                <button type="submit">Add Session</button>
+                <button type="submit" class="r-btn r-btn--primary">Add Session</button>
             </form>
         </section>
 
         <section id="Session-history">
             <h2>Session History</h2>
+
+            <!-- Screen-reader announcement area for Session History -->
+            <div id="history-status" class="sr-only" aria-live="polite" aria-atomic="true"></div>
 
             <div class="row">
                 <label class="filter" for="history-book">Book
@@ -375,7 +530,7 @@
                     <input id="history-date" type="date" />
                 </label>
 
-                <button id="history-clear" type="button">Clear</button>
+                <button id="history-clear" type="button" class="r-btn r-btn--ghost">Clear</button>
             </div>
 
             <div class="table-wrap">
@@ -398,16 +553,16 @@
             </p>
 
             <div class="row" id="history-pager">
-                <button id="history-prev" type="button" aria-label="Previous page">Prev</button>
+                <button id="history-prev" type="button" class="r-btn  r-btn--ghost" aria-label="Previous page">Prev</button>
                 <span id="history-page" class="muted"></span>
-                <button id="history-next" type="button" aria-label="Next page">Next</button>
+                <button id="history-next" type="button" class="r-btn  r-btn--ghost" aria-label="Next page">Next</button>
             </div>
         </section>
 
         <!--- App toasts -->
         <div id="toasts" aria-live="polite" aria-atomic="true"></div>
 
-        <script type="module" src="storage.js?v=1.4.0"></script>
-        <script type="module" src="app.js?v=1.4.0"></script>
+        <script type="module" src="./app.js"></script>
+        <script type="module" src="./dev/smoke.js"></script>
     </body>
 </html>

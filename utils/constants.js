@@ -1,17 +1,17 @@
 // Canonical statuses used across the app
-export const STATUS_CANON = ["reading", "planned", "finished"];
+export const STATUS_CANON = ["planned", "reading", "finished"];
 
 // Synonyms → canonical
 const STATUS_SYNONYMS = new Map([
-    ["reading", "reading"],
-    ["in_progress", "reading"],
-    ["in-progress", "reading"],
-    ["ongoing", "reading"],
-
     ["tbr", "planned"],
     ["to-read", "planned"],
     ["queued", "planned"],
     ["planned", "planned"],
+
+    ["reading", "reading"],
+    ["in_progress", "reading"],
+    ["in-progress", "reading"],
+    ["ongoing", "reading"],
 
     ["finished", "finished"],
     ["complete", "finished"],
@@ -19,11 +19,11 @@ const STATUS_SYNONYMS = new Map([
     ["done", "finished"]
 ]);
 
-// Normalize any status-ish string to canonical; default to "reading"
+// Normalize any status-ish string to canonical; default to "planned
 export function normalizeStatus(s) {
-    if (typeof s !== "string" || !s.trim()) return "reading";
+    if (typeof s !== "string" || !s.trim()) return "planned";
     const key = s.trim().toLowerCase();
-    return STATUS_SYNONYMS.get(key) || (STATUS_CANON.includes(key) ? key : "reading");
+    return STATUS_SYNONYMS.get(key) || (STATUS_CANON.includes(key) ? key : "planned");
 }
 
 // Common text fixes (lightweight, intentional)
@@ -54,3 +54,22 @@ export const SEARCH_FIELD_WEIGHTS = Object.freeze({
     series: 1,
     notes: 0.5
 });
+
+export const STATUS = Object.freeze({
+    PLANNED: "planned",
+    READING: "reading",
+    FINISHED: "finished",
+});
+
+export const SERIES_TYPE = Object.freeze({
+    SERIES: "series",
+    STANDALONE: "standalone",
+});
+
+export const FORMAT = Object.freeze({
+    DIGITAL: "digital",
+    PHYSICAL: "physical",
+});
+
+export const GOAL_WARNING_MIN = 50;
+export const GOAL_SUCCESS_MIN = 100;

@@ -1,5 +1,5 @@
 /*
-  Readr v1.4.0
+  Readr v1.5.0
 */
 
 import * as Books from "./features/books.js";
@@ -11,8 +11,6 @@ import { wireImportExport } from "./ui/wire-import-export.js";
 import { normalizeStatus } from "./utils/constants.js";
 import { initTooltip } from "./features/tooltip.js";
 import { initProfile, renderProfileUI, updateBookGoalsUI } from "./features/profile.js";
-
-
 
 const searchUI = attachSearchUI({
   render: () => Books.render()

@@ -1,177 +1,213 @@
-// storage.js — Backup/Import helpers for Readr v1.2.0
-const KEY = "readr.logs.v1";      // bump to v2 if schema changes
-const META = "readr.meta.v1";
-export const SCHEMA_VERSION = 1;  // bump when structure changes
+// storage.js — Unified Backup/Import + Migration for Readr v1.5.0 (schema v5)
 
-// Helpers
-function isArrayofObjects(x) { return Array.isArray(x) && x.every((v) => v && typeof v === "object"); }
+import { normalizeBook } from "../features/books.js";
+
+// --- Storage keys & schema ---
+const KEY = "readr:data.v5";      // single source of truth
+const META_KEY = "readr:meta.v5";
+export const SCHEMA_VERSION = 5;  // bump when structure changes
+
+// --- Helpers ---
 function coerceArray(x) { return Array.isArray(x) ? x : []; }
+function isObject(x) { return !!x && typeof x === "object"; }
 
-export function loadLogs() {
-    try {
-        const raw = localStorage.getItem(KEY);
-        if (!raw) return [];
-        const arr = JSON.parse(raw);
-        return Array.isArray(arr) ? arr : [];
-    } catch {
-        return [];
-    }
+// --- Core load/save ---
+export function loadData() {
+    const raw = localStorage.getItem(KEY);
+    if (!raw) return withMeta({ books: [], sessions: [] });
+
+    let parsed;
+    try { parsed = JSON.parse(raw); }
+    catch { return withMeta({ books: [], sessions: [] }); }
+
+    const fromVersion = Number.isFinite(+parsed?.schemaVersion) ? +parsed.schemaVersion : 0; 
+    const migrated = migrateData(parsed, fromVersion);
+    // persist after migration so app is consistent
+    localStorage.setItem(KEY, JSON.stringify(migrated));
+    return migrated;
 }
 
-export function saveLogs(items = []) {
-    try {
-        localStorage.setItem(KEY, JSON.stringify(items));
-        localStorage.setItem(META, JSON.stringify({
-            savedAt: new Date().toISOString(),
-            count: items.length,
-        }));
-        return true;
-    } catch {
-        return false;
-    }
+export function saveData(data) {
+    const safe = withMeta(data);
+    localStorage.setItem(KEY, JSON.stringify(safe));
+    localStorage.setItem(META_KEY, JSON.stringify({
+        savedAt: new Date().toISOString(),
+        books: Array.isArray(safe.books) ? safe.books.length : 0,
+        sessions: Array.isArray(safe.sessions) ? safe.sessions.length : 0,
+    }));
+    return true;
 }
 
-export function exportBackup() {
+function withMeta({ books: [], sessions: [] }) {
     return {
-        version: SCHEMA_VERSION,
+        schemaVersion: SCHEMA_VERSION,
         exportedAt: new Date().toISOString(),
-        items: loadLogs() || [],    // harden in case a caller ever changes loadLogs
+        books,
+        sessions
     };
 }
 
-export function clearLogs() {
-    localStorage.removeItem(KEY);
-    localStorage.removeItem(META);
+// --- Export (JSON string for download) ---
+export function exportBackup() {
+    const data = loadData();
+    return JSON.stringify(data, null, 2);
 }
 
+// --- Runtime meta ---
 export function getMeta() {
     try {
-        const raw = localStorage.getItem(META);
+        const raw = localStorage.getItem(META_KEY);
         return raw ? JSON.parse(raw) : null;
     } catch {
         return null;
     }
 }
 
+export function clearAllData() {
+    localStorage.removeItem(KEY);
+    localStorage.removeItem(META_KEY);
+}
+
 // -----------------------------
 // Backup validation (non-throwing)
 // -----------------------------
 /**
- * validateBackup(obj, { strict }) → { errors: string[], items: any[] }
- * - Never throws; returns arrays of issues you can show in a toast.
- * - Does not mutate input. Keeps your preferred "reading" status label.
+ * validateBackup(obj, { strict }) → { errors: string[], warnings: string[], books: any[], sessions: any[] }
+ * Accepts both modern {schemaVersion, books, sessions} and legacy {version, items|logs}.
  */
 export function validateBackup(obj, { strict = false } = {}) {
     const errors = [];
     const warnings = [];
 
     // Top-level checks
-    if (!obj || typeof obj !== "object") {
+    if (!isObject(obj)) {
         errors.push("Backup is not a valid JSON object.");
-        return { errors, warnings, items: [] };
+        return { errors, warnings, books: [], sessions: [] };
     }
-    const version = Number.isFinite(+obj.version) ? +obj.version : 0;
-    const items = coerceArray(obj.items ?? obj.logs);
-    if (!items.length) warnings.push("No items found in backup.");
 
-    // Known fields & contraints
-    const KNOWN_FIELDS = new Set([
-        "id", "title", "author", "status", "genre", "pages", "minutes", "createdAt", "updatedAt", "finishedAt", "series", "isDigital"
-    ]);
+    // Accept modern or legacy shapes
+    const schemaVersion = Number.isFinite(+obj.schemaVersion) ? +obj.schemaVersion : 0;
+    const legacyVersion = Number.isFinite(+obj.version) ? +obj.version : 0;
+
+    // Prefer modern fields; fallback to legacy items/logs
+    const books = Array.isArray(obj.books) ? obj.books : [];
+    const sessions = Array.isArray(obj.sessions) ? obj.sessions : [];
+    const legacyItems = Array.isArray(obj.logs) ? obj.logs : [];
+
+    // Very light checks for modern books/sessions
+    if (books.length === 0 && sessions.length === 0 && legacyItems.length === 0) {
+        warnings.push("No data found in backup.");
+    }
+
+    // Book field checks (non-blocking)
     const ALLOWED_STATUS = new Set(["planned", "reading", "finished", "abandoned"]);
+    const KNOWN_BOOK_FIELDS = new Set([
+        "id", "title", "author", "genre", "status", "createdAt", "updatedAt", "finishedAt", 
+        // v1.5.0 flags:
+        "seriesType","format","isbn",
+        // legacy spillover
+        "series", "pages", "minutes", "isDigital"
+    ]);
 
-    const seenIds = new Set();
-    items.forEach((it, idx) => {
-        const where = `item #${idx + 1}`;
-
-        if (!it || typeof it !== "object") {
-            errors.push(`${where}: not an object`);
+    (books.length ? books : legacyItems).forEach((b, idx) => {
+        const where = `book #${idx + 1}`;
+        if (!isObject(b)) {
+            warnings.push(`${where}: not an object (skipped)`);
             return;
         }
-
-        // Required-ish fields (soft)
-        if (!it.title || typeof it.title !== "string") {
+        if (!b.title || typeof b.title !== "string") {
             strict ? errors.push(`${where}: missing string "title"`) :
-                     warnings.push(`${where}: missing/invalid "title"`);
+            warnings.push(`${where}: missing/invalid "title"`);
         }
-        if (it.author != null && typeof it.author !== "string") {
+        if (b.author != null && typeof b.author !== "string") {
             warnings.push(`${where}: "author" should be a string`);
         }
-
-        // Status
-        if (it.status != null && !ALLOWED_STATUS.has(String(it.status))) {
-            warnings.push(`${where}: unknown status "${it.status}" (kept as-is)`);
+        if (b.status != null && !ALLOWED_STATUS.has(String(b.status))) {
+            warnings.push(`${where}: known status "${b.status}" (will be normalized)`);
         }
-
-        // Dates
-        ["createdAt","updatedAt","finishedAt"].forEach(f => {
-            if (it[f] != null && isNaN(Date.parse(it[f]))) {
-                warnings.push(`${where}: "${f}" is not a valid ISO date`);
+        ["createdAt", "updatedAt", "finishedAt"].forEach((f) => {
+            if (b[f] != null && Number.isNaN(Date.parse(b[f]))) {
+                warnings.push(`${where}: "${f}" is not a valid ISO date`); 
             }
         });
-
-        // ID uniqueness 
-        if (it.id != null) {
-            const k = String(it.id);
-            if (seenIds.has(k)) warnings.push(`${where}: duplicate id "${k}"`);
-            else seenIds.add(k);
-        }
-
-        // Unknown fields
-        Object.keys(it).forEach(k => {
-            if (!KNOWN_FIELDS.has(k)) {
-                warnings.push(`${where}: unknown field "${k}"`);
-            }
-        });
+        Object.keys(b).forEach((k) => { if (!KNOWN_BOOK_FIELDS.has(k)) warnings.push(`${where}: unknown field "${k}"`); });
     });
 
-   return { errors, warnings, items };
+    return { errors, warnings, books, sessions, legacyItems, schemaVersion, legacyVersion };
 }
 
 // -----------------------------
 // Migration + import helpers
 // -----------------------------
-export function migrateBackup(raw) {
-    const v = Number.isFinite(+raw?.version) ? +raw.version : 0;
-    if (v === 0) {
-        const logs = coerceArray(raw?.logs || raw?.items);
-        const items = logs.map((b) => {
-            const copy = { ...b };
-            if (!copy.createdAt) copy.createdAt = new Date().toISOString();
-            return copy;
-        });
+function migrateData(data, fromVersion) {
+    let d = { 
+        books: Array.isArray(data.books) ? data.books : [], 
+        sessions: Array.isArray(data.sessions) ? data.sessions : [], 
+    };
 
-        return { version: SCHEMA_VERSION, items, migratedFrom: 0 };
+    // v0/v1 legacy shape → convert {items|logs} → books
+    if ((fromVersion || 0 ) < 5) {
+        // If books empty but legacy exists in this blob, convert
+        const legacyItems = coerceArray(data.items ?? data.logs);
+        if (d.books.length == 0 && legacyItems.length > 0) {
+            d.books = legacyItems.map((v) => ({ ...v })); // shallow copy; normalize below
+        }
+
+        // Normalize every book to v1.5.0 shape
+        d.books = d.books.map(normalizeBook).filter(Boolean);
     }
-    if (v === 1) {
-        const items = coerceArray(raw?.items || raw?.logs);
-        return { version: 1, items, migratedFrom: 1 };
-    }
-    return { version: SCHEMA_VERSION, items: coerceArray(raw?.items), migratedFrom: v };
+
+    return withMeta(d);
 }
 
-export function importBackup(obj, { strict = false } = {}) {
-    // Validate first (non-throwing)
-    const { errors, warnings, items } = validateBackup(obj, { strict });
+function migrateLegacyToModern({ legacyItems }) {
+    const modern = {
+        schemaVersion: SCHEMA_VERSION,
+        exportedAt: new Date().toISOString(),
+        books: legacyItems.map((v) => normalizeBook(v)).filter(Boolean),
+        sessions: [],
+    };
+    return modern;
+}
+
+// -----------------------------
+// Import (migrate + persist + surface warnings)
+// -----------------------------
+export function importBackup(input, { strict = false } = {}) {
+    // Accept either object or JSON string
+    const obj = typeof input === "string" ? JSON.parse(input) : input;
+    
+    const { errors, warnings, books, sessions, legacyItems, schemaVersion } = 
+        validateBackup(obj, { strict });
     if (errors.length) {
         const err = new Error(errors[0]);
         err._all = errors;
         err._warnings = warnings;
         throw err; 
     }
-    // Migrate then persist
-    const migrated = migrateBackup({ ...obj, items });
-    if (!isArrayofObjects(migrated.items)) {
-        throw new Error("Backup has no items array.");
+
+    let modern;
+    if (schemaVersion >= 1 && (books.length || sessions.length)) {
+        // Modern → normalize all books
+        modern = {
+            schemaVersion: SCHEMA_VERSION,
+            exportedAt: new Date().toISOString(),
+            books: books.map(normalizeBook).filter(Boolean),
+            sessions: Array.isArray(sessions) ? sessions : [],
+        };
+    } else {
+        // Legacy → migrate items/logs into modern
+        modern = migrateLegacyToModern({ legacyItems: coerceArray(legacyItems) });
     }
-    saveLogs(migrated.items);
-    localStorage.setItem(META, JSON.stringify({
+    
+    saveData(modern);
+    localStorage.setItem(META_KEY, JSON.stringify({
         savedAt: new Date().toISOString(),
-        count: migrated.items.length,
         source: "import",
-        version: migrated.version,
-        migratedFrom: migrated.migratedFrom,
+        books: modern.books.length,
+        sessions: modern.sessions.length,
+        version: modern.schemaVersion,
     }));
-    // Surface warnings to caller (e.g., toast)
-    return { ...migrated, warnings };
+
+    return { ...modern, warnings };
 }

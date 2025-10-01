@@ -1,6 +1,6 @@
 // Quick smoke tests for versioned backups + migration
 
-import { migrateBackup, importBackup, exportBackup, SCHEMA_VERSION } from "../utils/storage.js";
+import { validateBackup, importBackup, exportBackup, SCHEMA_VERSION } from "../utils/storage.js";
 
 // tiny assert helpers
 function ok(cond, msg) {
@@ -15,7 +15,7 @@ export async function runStorageSmoke() {
   // Clean slate
   localStorage.clear();
 
-  // --- 1) v0 → v1 migration shape ---
+  // --- 1) v0 → v1 validation (pre-flight) ---
   const v0 = {
     version: 0,
     logs: [
@@ -24,16 +24,17 @@ export async function runStorageSmoke() {
     ]
   };
 
-  const mig = migrateBackup(v0);
-  eq(mig.version, SCHEMA_VERSION, "Migrated backup is at current SCHEMA_VERSION");
-  ok(Array.isArray(mig.items) && mig.items.length === 2, "Migrated items present");
-  ok(mig.items.every(b => b.id && b.title && b.author), "Items minimally shaped");
+  const { errors, warnings } = validateBackup(v0);
+  ok(Array.isArray(errors), "validateBackup returns errors array (may be empty)");
+  ok(Array.isArray(warnings), "validateBackup returns warnings array (may be empty)");
 
-  // --- 2) importBackup() persists items + meta ---
-  const imported = importBackup(v0); // should migrate then save
+  // --- 2) importBackup() migrates + persists items + meta ---
+  const imported = importBackup(v0); // migrates then saves
+  ok(Array.isArray(imported.items), "importBackup returns items array");
   ok(Array.isArray(imported.warnings), "importBackup returns warnings array");
   eq(imported.version, SCHEMA_VERSION, "importBackup returns current version");
   ok(!!localStorage.getItem("readr.logs.v1"), "Logs saved to localStorage");
+  
   const meta = JSON.parse(localStorage.getItem("readr.meta.v1") || "{}");
   eq(typeof meta.count, "number", "META has count");
   ok(!!meta.savedAt, "META has savedAt");

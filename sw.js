@@ -1,34 +1,34 @@
-// Service Worker for Readr v1.4.0
-const VERSION = "v1.4.0";
+// Service Worker for Readr v1.5.0
+const VERSION = "v1.5.0";
 const CACHE_STATIC  = `readr-static-${VERSION}`;
 const CACHE_RUNTIME = `readr-runtime-${VERSION}`;
 const MAX_RUNTIME_ENTRIES = 60;
 
-// Core app shell to precache (include versioned assets to bust cache)
+// Core app shell to precache (plain paths; SW version in cache name handles busting)
 const ASSETS = [
   "./",
   "./index.html",
-  "./styles.css?v=1.4.0",
-  "./app.js?v=1.4.0",
-  "./storage.js?v=1.4.0",          // shim for backward-compat
-  "./manifest.json",
-  "./features/a11y.js?v=1.4.0",
-  "./features/search-ui.js?v=1.4.0",
-  "./features/settings.js?v=1.4.0",
-  "./features/books.js?v=1.4.0",
-  "./features/import.js?v=1.4.0",
-  "./features/tooltip.js?v=1.4.0",
-  "./features/profile.js?v=1.4.0",
-  "./features/sessions.js?v=1.4.0",
-  "./ui/wire-import-export.js?v=1.4.0",
-  "./utils/dom.js?v=1.4.0",
-  "./utils/constants.js?v=1.4.0",
-  "./utils/search.js?v=1.4.0",
-  "./utils/aggregate.js?v=1.4.0",
-  "./utils/formatMs.js?v=1.4.0",
-  "./utils/download.js?v=1.4.0",
-  "./utils/validate.js?v=1.4.0",
-  "./utils/storage.js?v=1.4.0",
+  "./styles.css",
+  "./app.js",
+  "./storage.js",          // shim for backward-compat
+  "./features/a11y.js",
+  "./features/search-ui.js",
+  "./features/settings.js",
+  "./features/books.js",
+  "./features/import.js",
+  "./features/tooltip.js",
+  "./features/profile.js",
+  "./features/sessions.js",
+  "./ui/wire-import-export.js",
+  "./utils/dom.js",
+  "./utils/constants.js",
+  "./utils/search.js",
+  "./utils/aggregate.js",
+  "./utils/formatMs.js",
+  "./utils/download.js",
+  "./utils/validate.js",
+  "./utils/storage.js",
+  "./utils/autosuggest.js",
   "./images/favicon_teal.ico",
   "./images/favicon_white.ico",
   "./images/readr_icon_192.png",
@@ -41,12 +41,6 @@ const ASSETS = [
   "./images/social-card-white-teal-stacked.png",
   "./images/social-card-dark-stacked.png"
 ];
-
-// Dev assert: make sure ASSETS use this VERSION token
-if (location.hostname === "127.0.0.1" || location.hostname === "localhost") {
-  const bad = ASSETS.filter(x => /\?v=/.test(x) && !x.includes(VERSION));
-  if (bad.length) console.warn("[SW] ASSETS missing ?v=", VERSION, bad);
-}
 
 // ---------- Helpers ----------
 async function pruneCache(cacheName, maxEntries) {
@@ -141,8 +135,8 @@ self.addEventListener("fetch", (event) => {
   if (isRuntimeCacheable) {
     event.respondWith((async () => {
       const cache = await caches.open(CACHE_RUNTIME);
-      // IMPORTANT: do NOT ignore search params; they carry the version (?v=1.3.0)
-      const cached = await cache.match(request, { ignoreSearch: false });
+      // Ignore search so plain/cached path matches even if ?v= is present/absent
+      const cached = await cache.match(request, { ignoreSearch: true });
 
       const network = fetch(request).then((resp) => {
         if (resp && resp.ok && (resp.type === "basic" || resp.type === "cors")) {
@@ -156,9 +150,9 @@ self.addEventListener("fetch", (event) => {
     return;
   }
 
-  // 4) Default → try cache (respect ?v=), then network
+  // 4) Default → try cache (ignore ?v=), then network
   event.respondWith((async () => {
-    const cached = await caches.match(request, { ignoreSearch: false });
+    const cached = await caches.match(request, { ignoreSearch: true });
     return cached || fetch(request);
   })());
 });

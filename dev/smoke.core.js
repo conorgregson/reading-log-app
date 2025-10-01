@@ -1,10 +1,10 @@
-import { saveLogs, loadLogs, clearLogs, exportBackup, validateBackup } from "../utils/storage.js";
+import { saveData, loadData, clearAllData, exportBackup, validateBackup } from "../utils/storage.js";
 import { aggregateByDay, mapToSeries } from "../utils/aggregate.js";
 import { downloadJson, downloadText } from "../utils/download.js";
 import { formatMs } from "../utils/formatMs.js";
 import { smartSearch } from "../utils/search.js";
 
-const SMOKE_VERSION = "Readr v1.4.0";
+const SMOKE_VERSION = "Readr v1.5.0";
 
 // --- Dev ergonomics helpers ---
 /** Open a console group that always closes (even on throw). */
@@ -73,13 +73,14 @@ export async function runCoreSmoke(n = 2000) {
     let arr, pages, series, backup; 
 
     try {
-        // --- Save ---
+        // --- Save (books) ---
        {
             const end = openGroup("💾 Save");
             console.time("save");
             try {
                 const t = now();
-                saveLogs(fake);
+                // Store fake items as BOOKS for search + aggregate smoke
+                saveData({ books: fake, sessions: [] });
                 saveMs = now() - t;
             } finally {
                 console.timeEnd("save");
@@ -93,7 +94,7 @@ export async function runCoreSmoke(n = 2000) {
             console.time("load");
             try {
                 const t = now();
-                arr = loadLogs();
+                arr = loadData().books;
                 loadMs = now() - t;
             } finally {
                 console.timeEnd("load");
@@ -112,13 +113,13 @@ export async function runCoreSmoke(n = 2000) {
             "All loaded items have zero activity (pages/minutes)"
         );
 
-        // --- Aggregate ---
+        // --- Aggregate (by pagesRead) ---
         {
             const end = openGroup("📊 Aggregate");
             console.time("aggregate");
             try {
                 const t = now();
-                const p = aggregateByDay(arr, "pages");
+                const p = aggregateByDay(arr, "pagesRead");
                 pages = p;                    
                 series = mapToSeries(p);       
                 aggregateMs = now() - t;
@@ -163,11 +164,12 @@ export async function runCoreSmoke(n = 2000) {
             const end = openGroup("✅ Validate + Normalize");
             try {
                 const t = now();
-                const res = validateLogJson({ items: fake }, { strict: fake });
+                // Modern shape
+                const res = validateBackup({ books: fake }, { strict: fake });
                 validateMs = now() - t;
 
                 const errCount = res?.errors?.length ?? 0;
-                console.log("Validation ok?", errCount = 0, "Errors:", errCount);
+                console.log("Validation ok?", errCount === 0, "Errors:", errCount);
 
                 assert(errCount === 0, `Validation failed with ${errCount} error(s)`, {
                 firstErrors: res?.errors?.slice(0, 5)
@@ -266,7 +268,7 @@ export async function runCoreSmoke(n = 2000) {
             const end = openGroup("🧩 Backup + download (timed)");
             try {
                 const t = now();
-                backup = exportBackup();          // assign to the hoisted `backup`
+                backup = JSON.parse(exportBackup());  // exportBackup returns a JSON string       
                 backupMs = now() - t;
 
                 const isSmokeMode = typeof window !== "undefined" && window.location && window.location.search.includes("smoke=");
@@ -274,7 +276,7 @@ export async function runCoreSmoke(n = 2000) {
                     downloadJson(backup, "smoke-backup.json");
                 }
 
-                console.log("Backup sample:", backup.version, backup.items.length, backup.exportedAt);
+                console.log("Backup sample:", backup.schemaVersion, backup.books.length, backup.exportedAt);
             } finally {
                 end();
             }
@@ -287,8 +289,8 @@ export async function runCoreSmoke(n = 2000) {
         console.error("❌ Smoke test error:", err);
     } finally {
         // Cleanup
-        clearLogs();
-        console.log("After clear:", loadLogs().length);
+        clearAllData();
+        console.log("After clear:", loadData().books.length);
 
         // Compact timing summary with auto-units
         const parts = [];

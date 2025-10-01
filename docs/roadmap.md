@@ -106,21 +106,21 @@ Released: Sep 2025
 ---
 
 ### 📕 Version 1.5 — Book Enhancements
-- [ ] Add Series / Stand-alone flag for books
+- [x] Add Series / Stand-alone flag for books
   - _AC_: User can mark book as part of a series or stand-alone.
-- [ ] Add Digital/ Physical flag for books
+- [x] Add Digital/ Physical flag for books
   - _AC_: User can mark book as physical or digital.
-- [ ] Optional IBSN field
+- [x] Optional IBSN field
   - _AC_: ISBN field is optional and stored if provided.
-- [ ] Dropdown auto-suggest in logs based on author, series, genre
+- [x] Dropdown auto-suggest in logs based on author, series, genre
   - _AC_: When typing in logs, suggestions appear from existing metadata.
-- [ ] Switch status flow: Planned → Reading → Finished (buttons styled to match theme/mode)
-  - _AC_: USer can change status via consistent theme-colored buttons
-- [ ] Bulk edit for status/genre  
+- [x] Switch status flow: Planned → Reading → Finished (buttons styled to match theme/mode)
+  - _AC_: User can change status via consistent theme-colored buttons
+- [x] Bulk edit for status/genre  
   - _AC:_ Select multiple books and change their status or genre at once.  
-- [ ] A11y: field labels and bulk-edit modals fully operable via keyboard  
+- [x] A11y: field labels and bulk-edit modals fully operable via keyboard  
 
-- Planned Q4 2025
+Released: Sep 2025
 
 ---
 ### 🔍 Version 1.6 — Search & Filters
@@ -135,7 +135,7 @@ Released: Sep 2025
 - [ ] Clear all filters button  
   - _AC:_ Reset restores unfiltered book list instantly.   
 
-- Planned Q4 2025
+Planned Q4 2025
 
 ---
 
@@ -152,7 +152,7 @@ Released: Sep 2025
   - _AC:_ User can opt in to daily/weekly reminders about goals.  
 - [ ] A11y: summaries and streaks announced by screen readers  
 
-- Planned Q4 2025
+Planned Q4 2025
 
 ---
 
@@ -168,7 +168,7 @@ Released: Sep 2025
 - [ ] Quick-add session shortcut  
   - _AC:_ User can log a session with fewer clicks via “+ Session” button in toolbar.  
 
-- Planned Q4 2025
+Planned Q4 2025
 
 ---
 
@@ -183,7 +183,7 @@ Released: Sep 2025
   - _AC:_ Export/share an image of current stats (books read, streaks).  
 - [ ] A11y: badges and charts have alternative text summaries  
 
-- Planned Q4 2025
+Planned Q4 2025
 
 ---
 

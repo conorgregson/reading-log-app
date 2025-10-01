@@ -123,7 +123,8 @@ function makeIndexEntry(item, fields) {
     pick("book",   item.book,   W?.series ?? 2);
     pick("date",   item.date,   1);
 
-    return parts;
+    // IMPORTANT: smartSearch() expects { ref, fields }
+    return { ref: item, fields: parts };
 }
 
 function matchEntry(entry, tokens, opts) {

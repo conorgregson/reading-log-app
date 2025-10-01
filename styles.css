@@ -18,6 +18,9 @@
     --primary-dark: #006666;
     --progress-success: #10b981;     /* green */
     --progress-warning: #f59e0b;     /* amber */
+
+    --complete: #198754;
+    --complete-dark: #146c43;
 }
 
 /* Utility Class: visually hidden for accessible labels */
@@ -67,7 +70,7 @@ a:hover,
 a:focus {
   text-decoration: underline;        
   text-underline-offset: 2px;        
-  outline: none;                     /
+  outline: none;                     
 }
 
 /* Focus ring (uses your theme variable) */
@@ -81,6 +84,9 @@ a:focus {
 body {
     background: var(--bg);
     color: var(--text);
+    font-family: Arial, Helvetica, sans-serif;
+    margin: 0;
+    padding: 1rem;
 }
 
 .mode-dark {
@@ -92,13 +98,48 @@ body {
     --track: #1f2a44;
     --primary: #5ce0df;              /* lighter teal for contrast */
     --primary-dark: #42b7b7;
+
+    --complete: #0F7B60;
+    --complete-dark: #0D6E55;
 }
 
-body {
-    font-family: Arial, Helvetica, sans-serif;
-    margin: 0;
-    padding: 1rem;
-    
+button {
+    color: inherit;
+    font-size: 1rem;
+    border: none;
+    border-radius: 6px;
+    padding: 0.5rem 1rem;
+    cursor: pointer;
+    transition: background 0.2s;
+}
+button:hover {
+    background: var(--hover-bg);
+}
+
+/* Primary teal button (default) */
+.r-btn--primary {
+    background: var(--primary);
+    color: #ffffff;
+    border: 1px solid var(--primary-dark);
+}
+.r-btn--primary:hover {
+    background: var(--primary-dark);
+}
+
+/* Ghost / neutral button (safe cancel) */
+.r-btn--ghost {
+  background: transparent;
+  color: var(--text);
+  border: 1px solid var(--border);
+  transition: background 0.2s ease, color 0.2s ease;
+}
+.r-btn--ghost:hover,
+.r-btn--ghost:focus-visible {
+  background: var(--hover-bg);
+}
+.mode-dark .r-btn--ghost:hover,
+.mode-dark .r-btn--ghost:focus-visible {
+  background: var(--hover-bg);
 }
 
 /* App logo + compact wordmark */
@@ -262,10 +303,41 @@ body {
     background: var(--card-bg);
 }
 
+/* Primary action: Start Reading (teal) */
+#books .status-btn {
+  background: var(--primary);           
+  color: #fff;
+  border: 1px solid var(--primary-dark);
+}
+#books .status-btn:hover { background: var(--primary-dark); }
+
+/* When action is "finish", show complete (green) */
+#books .status-btn[data-action="finish"] {
+  background: var(--complete, #198754);
+  border-color: var(--complete-dark);
+}
+#books .status-btn[data-action="finish"]:hover {
+  background: var(--complete-dark, #146c43);
+}
+
+/* Secondary: Edit → outline/ghost so it doesn’t compete */
+#books .edit-btn.r-btn {
+  background: transparent;
+  color: inherit;
+  border: 1px solid var(--border);
+}
+#books .edit-btn.r-btn:hover { background: var(--border); }
+
+/* Focus (both) */
+#books .status-btn:focus-visible,
+#books .edit-btn:focus-visible {
+  outline: 2px solid #fff;
+  box-shadow: 0 0 0 3px rgba(0,128,128,.25);
+}
+
 /* Base Readr button + small modifier (framework-safe) */
 .r-btn {
     font: inherit;
-    background: transparent;
     border: none;
     border-radius: 6px;
     cursor: pointer;
@@ -306,6 +378,61 @@ body {
     font-weight: 600;
 }
 
+/* Bulk toolbar */
+#bulk-toolbar {
+    align-items: center;
+    margin: 0.5rem 0 0.75rem;
+}
+#bulk-selected-count {
+    margin-left: 0.5rem;
+}
+#author-tip {
+    margin: 0.25rem 0 0;
+}
+.check-all {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+}
+
+/* Row checkbox spacing inside list items */
+.row .row-check-wrap {
+    margin-right: 0.5rem;
+    display: inline-flex;
+    align-items: center;
+}
+
+/* Dialog */
+#bulk-edit-dialog {
+    border: none;
+    border-radius: 16px;
+    padding: 1rem 1.25rem;
+    box-shadow: 0 24px 64px rgba(0, 0, 0, 0.35);
+    background: var(--card-bg);
+    color: var(--text);
+    max-width: 520px;
+    width: min(92vw, 520px);
+}
+#bulk-edit-dialog::backdrop {
+    background: rgba(0, 0, 0, 0.5);
+}
+#bulk-edit-dialog form {
+    display: grid;
+    gap: 1rem;
+}
+#bulk-edit-dialog fieldset {
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    display: flex;
+    padding: 0.6rem 0.8rem;
+    gap: 1rem;
+}
+#bulk-edit-dialog .dialog__actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 0.5rem;
+}
+
 /* Toolbar with gap */
 #toolbar {
     display: flex;
@@ -327,21 +454,8 @@ h1, h2, h3 {
     text-align: center;
 }
 
-button {
-    background: var(--primary);
-    color: whitesmoke;
-    border: none;
-    border-radius: 6px;
-    padding: 0.5rem 1rem;
-    cursor: pointer;
-    transition: background 0.2s;
-}
-button:hover {
-    background: var(--primary-dark);
-}
-
 #clear-runtime-cache {
-    opacity: .9;
+    opacity: 0.9;
 }
 #clear-runtime-cache:hover {
     opacity: 1;
@@ -361,7 +475,7 @@ form {
     gap: 0.5rem;
     margin-bottom: 1rem;
 }
-input, select, button {
+input, select {
     padding: 0.5rem;
     font-size: 1rem;
 }
@@ -422,12 +536,12 @@ li {
 .edit-row select {
     min-width: 120px;
 }
-.edit-row .btn-ghost {
+.edit-row .r-btn--ghost {
     color: inherit;
     background: transparent;
     border: 1px solid var(--border);
 }
-.edit-row .btn-ghost:hover {
+.edit-row .r-btn--ghost:hover {
     background: var(--hover-bg);
 }
 
@@ -466,6 +580,31 @@ li {
     flex-direction: row;
 }
 
+/* Suggest dropdown */
+.suggest-box {
+  position: absolute;
+  z-index: 50;
+  background: var(--card-bg);
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  box-shadow: 0 8px 24px rgba(0,0,0,.12);
+  margin-top: 4px;
+  min-width: 220px;
+  max-height: 240px;
+  overflow: auto;
+  padding: 4px;
+}
+.suggest-item {
+  padding: 6px 8px;
+  border-radius: 6px;
+  cursor: pointer;
+}
+.suggest-item:hover,
+.suggest-item.active {
+  background: var(--hover-bg);
+}
+
 #goal-widget, #reading-log {
     background: var(--card-bg); 
     border: 1px solid var(--border);
@@ -498,6 +637,27 @@ li {
 }
 .nudge-group button:hover {
     background: var(--border);
+}
+
+/* Bulk Edit button: disabled = neutral/outlined, enabled = teal */
+#bulk-edit-btn {
+  border: 1px solid var(--border);
+}
+
+/* Disabled (no selections) */
+#bulk-edit-btn:disabled,
+#bulk-edit-btn[aria-disabled="true"] {
+  background: var(--track);
+  color: var(--muted);
+  cursor: not-allowed;
+  opacity: 0.98;            /* subtle dim */
+}
+
+/* Focus ring for a11y */
+#bulk-edit-btn:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: 2px;
+  box-shadow: 0 0 0 3px rgba(0,128,128,0.25);
 }
 
 #today-bar { 
@@ -693,6 +853,29 @@ li {
 #settings-menu .btn-reset:hover,
 #settings-menu .btn-reset:focus {
   background-color: #5a6268;
+}
+
+/* Make primary buttons inside row actions/edit keep the teal look */
+.row-actions .r-btn,
+.row-edit .r-btn {
+  background: var(--primary);
+  color: #ffffff;
+}
+
+.row-actions .r-btn:hover,
+.row-edit .r-btn:hover {
+  background: var(--primary-dark);
+}
+
+.r-btn.r-btn--ghost {
+  background: transparent;
+  color: var(--text);
+  border: 1px solid var(--border);
+  transition: background .2s ease, color .2s ease;
+}
+.r-btn.r-btn--ghost:hover,
+.r-btn.r-btn--ghost:focus-visible {
+  background: var(--hover-bg);
 }
 
 #reset {

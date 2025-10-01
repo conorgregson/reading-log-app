@@ -3,6 +3,31 @@ All notable changes to **Readr** (reading log app) will be documented in this fi
 
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/), and we aim to follow [Semantic Versioning](https://semver.org/).  
 
+## [v1.5.0] — Book Enhancements (2025-09-30)
+
+### Added
+- Series / Stand-alone flag for books
+- Digital / Physical format flag with compatible subtypes
+- Optional ISBN field with live hints and save-time validation
+- Dropdown auto-suggest for Add/Edit book forms (author, series, genre)
+- Bulk edit dialog for status, genre, and other fields
+- Keyboard navigation and focus trapping for bulk-edit modal
+- Native datalist support for Add-Book author and series inputs
+
+### Changed
+- Status flow updated to Planned → Reading → Finished, with theme-styled buttons
+- Normalization of legacy statuses to match new flow
+- Consistent ISBN validation message across Add/Edit forms
+
+### Removed
+- Legacy unread/typos statuses (migrated to Planned/Reading/Finished)
+
+### Notes
+- Accessibility improved: list keyboard navigation, live region updates, focus management in modals
+- Add-Book and inline edit forms now prevent malformed ISBN saves
+
+---
+
 ## [v1.4.1] — Button & Progress Fixes (2025-09-24)
 
 ### Fixed
@@ -66,7 +91,7 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/), and
 
 ---
 
-## [v1.3.2] — Security & Bugfixes (2025-09-15)
+## [v1.3.2] — Security & Bug Fixes (2025-09-15)
 
 ### Fixed
 - Replaced `innerHTML` in `showToast()` with safe DOM construction to eliminate XSS risk.
@@ -109,6 +134,14 @@ This patch release improves **visual polish and accessibility** of the Settings 
 - **Theme toggle** now uses `menuitemcheckbox` with `aria-checked` to reflect state.
 - **Border vs track colors** differentiated for better visual hierarchy.
 - CSS selectors simplified (`.r-btn--sm` instead of `.r-btn.r-btn--sm`).
+- Session History buttons styled consistently:
+   - Prev/Next now use ghost style
+   - Save now matches teal primary save buttons elsewhere
+
+### Fixed
+- Bulk Edit radio switching now shows only the relevant field (no lingering “New genre”)
+- “Change format subtype” panel now correctly appears when selected
+- Bulk dialog focus bug (radio change now targets correct input)
 
 ### Removed
 - Old header/brand classes: `.brand`, `.wordmark`, `.logo`, `.slogan`.
