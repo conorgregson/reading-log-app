@@ -3,6 +3,42 @@ All notable changes to **Readr** (reading log app) will be documented in this fi
 
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/), and we aim to follow [Semantic Versioning](https://semver.org/).  
 
+## [v1.6.0] — Search & Filters (2025-10-07)
+
+### Added
+- **Grouped autocomplete** for queries (Title / Author / Series / Genre) with up to 8 total suggestions, keyboard + mouse support.
+- **Dedicated Search button** that runs searches instantly (also triggers on Enter). Hidden/disabled when query unchanged.
+- **Inline clear (×)** inside the search box to quickly reset text without clearing filters.
+- **Saved searches** with persistent save / apply / rename / delete actions stored in localStorage.
+- **Enhanced Clear Filters** that resets query, suggestions, all multi-select filters, and TBR options in one click.
+- **Runtime checks** for missing templates and safer fallback element creation (no `innerHTML`).
+
+### Changed
+- Search now triggers only on meaningful input (≥2 chars).
+- Books list uses improved fuzzy + fallback matching for titles, authors, series, genres, and ISBNs.
+- Search button and clear visibility dynamically reflect current filter state.
+
+### Fixed
+- Resolved rare crash when sorting undefined rows after empty query.
+- Fixed double “×” issue by hiding browser’s native input clear icon.
+- Addressed edge cases where Clear Filters disappeared despite active filters.
+
+### Notes
+- This version completes the **Smarter Search milestone**, preparing groundwork for saved-set management UI in v1.7.0.
+- Recommended commit message:  
+  `feat(v1.6.0): grouped autocomplete + saved searches + dedicated Search button`
+- Added **eight new screenshots** to the README:
+  - Search & Filters  
+  - Multi-Select Filters  
+  - Saved Searches  
+  - Search Results Example  
+  - Bulk Edit Dialog  
+  - Settings Dropdown  
+  - Installed App View  
+  - Updated header line noting version (v1.6.0 — Search & Filters)
+
+---
+
 ## [v1.5.0] — Book Enhancements (2025-09-30)
 
 ### Added

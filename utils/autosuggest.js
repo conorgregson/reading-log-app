@@ -1,6 +1,10 @@
 // Minimal, dependency-free listbox suggest with ARIA + keyboard support.
 
-export function attachSuggest({ input, getOptions, maxItems = 8 }) {
+// getOptions may now return either:
+//  - flat:    ["Dune","Frank Herbert",...]
+//  - grouped: [{ label:"Title",  items:[...strings] },
+//              { label:"Author", items:[...strings] }, ...]
+export function attachSuggest({ input, getOptions, maxItems = 8, onPick } = {}) {
     if (!input) return () => {};
 
     // --- ARIA wiring on the input (combobox pattern) ---
@@ -19,7 +23,10 @@ export function attachSuggest({ input, getOptions, maxItems = 8 }) {
     box.hidden = true;
     input.after(box);
 
+    // items = pickable strings (for keyboard nav and pick())
     let items = [];
+    // groups = [{ label, items: [...] }] when grouped, otherwise null
+    let groups = null;
     let active = -1;
     let open = false;
 
@@ -42,26 +49,50 @@ export function attachSuggest({ input, getOptions, maxItems = 8 }) {
         input.setAttribute("aria-expanded", "true");
     }
 
-    // render the listbox to match current `items` and `active`
+    // render the listbox to match current `items` / `groups` and `active`
     function render() {
         box.innerHTML = "";
         const frag = document.createDocumentFragment();
-        items.slice(0, maxItems).forEach((text, idx) => {
-            const opt = document.createElement("div");
-            opt.className = "suggest-item";
-            opt.id = genId("opt");
-            opt.setAttribute("role", "option");
-            opt.setAttribute("aria-selected", active === idx ? "true" : "false");
-            if (active === idx) opt.classList.add("active");
-            opt.textContent = text;
-            opt.addEventListener("mousedown", (e) => {
-                e.preventDefault(); // keep focus on input
-                pick(idx);
+        if (groups && groups.length) {
+            let pickIdx = 0;
+            for (const g of groups) {
+                if (!g?.items?.length) continue;
+                const header = document.createElement("div");
+                header.className = "suggest-group";
+                header.setAttribute("aria-hidden", "true");
+                header.textContent = g.label || "Suggestions";
+                frag.appendChild(header);
+                for (const text of g.items) {
+                    const idx = pickIdx++;
+                    const opt = document.createElement("div");
+                    opt.className = "suggest-item";
+                    opt.id = genId("opt");
+                    opt.setAttribute("role", "option");
+                    opt.setAttribute("aria-selected", active === idx ? "true" : "false");
+                    if (active === idx) opt.classList.add("active");
+                    opt.textContent = text;
+                    opt.addEventListener("mousedown", (e) => { e.preventDefault(); pick(idx); });
+                    opt.addEventListener("mouseenter", () => setActive(idx));
+                    opt.addEventListener("click", () => pick(idx));
+                    frag.appendChild(opt);
+                }
+            }
+        } else {
+            items.slice(0, maxItems).forEach((text, idx) => {
+                const opt = document.createElement("div");
+                opt.className = "suggest-item";
+                opt.id = genId("opt");
+                opt.setAttribute("role", "option");
+                opt.setAttribute("aria-selected", active === idx ? "true" : "false");
+                if (active === idx) opt.classList.add("active");
+                opt.textContent = text;
+                opt.addEventListener("mousedown", (e) => { e.preventDefault(); pick(idx); });
+                opt.addEventListener("mouseenter", () => setActive(idx));
+                opt.addEventListener("click", () => pick(idx));
+                frag.appendChild(opt);
             });
-            opt.addEventListener("mouseenter", () => setActive(idx));
-            opt.addEventListener("click", () => pick(idx));
-            frag.appendChild(opt);
-        });
+        }
+
         box.appendChild(frag);
         if (items.length && active < 0) setActive(0);
     }
@@ -76,27 +107,59 @@ export function attachSuggest({ input, getOptions, maxItems = 8 }) {
 
     function pick(idx) {
         if (idx < 0 || idx >= items.length) return;
-        input.value = items[idx];
+        const val = items[idx];
+        input.value = val;
+        // optional external hook (lets callers run search immediately)
+        try { onPick && onPick(val); } catch {}
         close();
         input.dispatchEvent(new Event("input", { bubbles: true }));
         input.dispatchEvent(new Event("change", { bubbles: true }));
     }
 
+    function isGrouped(list) {
+        return Array.isArray(list) && !!list.length && typeof list[0] === "object" && Array.isArray(list[0].items);
+    }
+
+    function normalizeGrouped(all) {
+        // Cap to maxItems across ALL groups, in incoming order
+        const out = [];
+        let total = 0;
+        for (const g of all) {
+            if (!g?.item?.length) continue;
+            const take = Math.max(0, Math.min(maxItems - total, g.items.length));
+            if (!take) break;
+            out.push({ label: g.label, items: g.items.slice(0, take) });
+            total += take;
+        }
+        // build flat pickable list
+        const flat = out.flatMap((g) => g.items);
+        return { groups: out, flat }; 
+    }
+
     function filter(q) {
-        const all = (getOptions?.(q) ?? getOptions?.() ?? []).filter(Boolean);
+        const raw = (getOptions?.(q) ?? getOptions?.() ?? []);
+        const all = Array.isArray(raw) ? raw : [];
         const needle = (q || "").trim().toLowerCase();
-        if (!needle) {
-            items = all.slice(0, maxItems);
+        if (isGrouped(all)) {
+            // assume caller already ranked/filtered; just cap & render with headers
+            const norm = normalizeGrouped(all);
+            groups = norm.groups;
+            items = norm.flat;
         } else {
-            // simple contains; favors prefix
-            items = all
-                .map((v) => String(v))
-                .filter((v) => v.toLowerCase().includes(needle))
-                .sort((a, b) => {
-                    const ap = a.toLowerCase().startsWith(needle) ? 0 : 1;
-                    const bp = b.toLowerCase().startsWith(needle) ? 0 : 1;
-                    return ap - bp || a.localeCompare(b);
-                });
+            groups = null;
+            if (!needle) {
+                items = all.filter(Boolean).slice(0, maxItems).map(String);
+            } else {
+                // simple contains; favors prefix
+                items = all
+                    .map((v) => String(v))
+                    .filter((v) => v.toLowerCase().includes(needle))
+                    .sort((a, b) => {
+                        const ap = a.toLowerCase().startsWith(needle) ? 0 : 1;
+                        const bp = b.toLowerCase().startsWith(needle) ? 0 : 1;
+                        return ap - bp || a.localeCompare(b);
+                    });
+            }
         }
         active = -1;
         render();

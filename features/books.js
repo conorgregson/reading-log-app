@@ -631,28 +631,75 @@ export function render() {
   // Text search (fuzzy/phrase)
   let rows;
   if (tokens.length) {
+    // Normalize fields we want to score on
+    const norm = (v) => (Array.isArray(v) ? v.filter(Boolean).join(" ") : (v || ""));
     const enriched = base.map((b) => ({
       ...b,
-      book: [b.series, b.genre, b.isbn].filter(Boolean).join(" ")
+      // expose explicit fields for the scorer
+      series: norm(b.series),
+      genre:  norm(b.genres ?? b.genre),
+      isbn:   String(b.isbn || ""),
     }));
-    const results = smartSearch(enriched, rawQuery, {
+    const q = rawQuery;
+    // Always coerce to an array; tolerate libraries that return null/undefined
+    const rawResults = smartSearch(enriched, q, {
       fuzzyMaxDistance: (window.searchFuzzyOverride ?? FUZZY_DEFAULTS.token),
       limit: 500,
-      // Use numeric weights from constants so relevance stays consistent
-      fields: { 
-        title: W.title, 
-        author: W.author,   
-        book: W.series,     // the synthetic "book" field represents series/genre/isbn
-        // notes/date excluded in UI search; add W.notes / 1 if you want them ranked
+      fields: {
+        title:  W.title,
+        author: W.author,
+        series: W.series,
+        genre:  W.genre,
+        isbn:   W.isbn,
       }
-    });
-    rows = results.map((r) => r.ref); // preserve search order
+    }) || [];
+    let results = Array.isArray(rawResults) ? rawResults : [];
+
+    // Helper: smartSearch may return either raw items or {ref: item}
+    const getRef = (r) => (r && typeof r === "object" && "ref" in r) ? r.ref : r;
+
+    // Prefer prefix matches for the typed token — stable tie-break on label
+    if (results.length) {
+      const needle = q.trim().toLowerCase();
+      results.sort((a, b) => {
+        const ar = getRef(a) || {};
+        const br = getRef(b) || {};
+        const at = String(ar.title || "").toLowerCase();
+        const bt = String(br.title || "").toLowerCase();
+        const aa = String(ar.author || "").toLowerCase();
+        const ba = String(br.author || "").toLowerCase();
+        const ap = at.startsWith(needle) ? 0 : 1;
+        const bp = bt.startsWith(needle) ? 0 : 1;
+        if (ap !== bp) return ap - bp;
+        // then author prefix
+        const aap = aa.startsWith(needle) ? 0 : 1;
+        const bbp = ba.startsWith(needle) ? 0 : 1;
+        if (aap !== bbp) return aap - bbp;
+        // finally stable alpha by title
+        return String(ar.title || "").localeCompare(String(br.title || ""));
+      });
+    }
+    rows = results.map(getRef);
+
+    // Fallback: simple contains across key fields if scorer yielded no rows
+    if (!rows.length) {
+      const needle = q.toLowerCase();
+      rows = enriched.filter((b) =>
+        String(b.title||"").toLowerCase().includes(needle) ||
+        String(b.author||"").toLowerCase().includes(needle) ||
+        String(b.series||"").toLowerCase().includes(needle) ||
+        String(b.genre||"").toLowerCase().includes(needle)  ||
+        String(b.isbn||"").toLowerCase().includes(needle)
+      );
+    }
   } else {
+    // no query → just use the facet-filtered list
     rows = base;
   }
 
-  // Sort 
-  const [key, dir] = sort.split(":"); // e.g. "title:asc"
+  // Sort (guard against any unexpected non-array)
+  rows = Array.isArray(rows) ? rows : [];
+  const [key, dir] = (sort || "createdAt:desc").split(":"); // e.g. "title:asc"
   rows.sort((a, b) => {
     let aVal = (a[key] ?? "").toString().toLowerCase();
     let bVal = (b[key] ?? "").toString().toLowerCase();
@@ -1269,7 +1316,7 @@ function inlineEditForm(book) {
   attachSuggest({ input: seriesIn || seriesIn, getOptions: providers.series  });
   attachSuggest({ input: genreIn  || genreIn,  getOptions: providers.genres  });
 
-  const saveBtn = button("Save");
+  const saveBtn = button("Save", "r-btn r-btn--primary");
   saveBtn.type = "submit";
   const cancel = button("Cancel", "r-btn r-btn--ghost", () => { UIState.editingId = null; render(); });
 

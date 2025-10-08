@@ -13,8 +13,12 @@ import { initTooltip } from "./features/tooltip.js";
 import { initProfile, renderProfileUI, updateBookGoalsUI } from "./features/profile.js";
 
 const searchUI = attachSearchUI({
-  render: () => Books.render()
+  render: () => Books.render(),
+  getBooks: () => books,
 });
+
+// After imports or any mutation to the book set:
+// SearchUI.refresh();
 
 // Make available for modules that want to announce status
 window.searchUI = searchUI;

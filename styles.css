@@ -560,7 +560,10 @@ li {
     display: flex; 
     flex-wrap: wrap; 
     gap: 0.5rem; 
-    margin-bottom: 0.5rem; 
+    margin-bottom: 0.5rem;
+    position: relative; 
+    min-height: 2rem;
+    padding: 0.3rem 0.75rem;
 }
 #controls input[type="search"] { 
     flex: 1; 
@@ -583,17 +586,18 @@ li {
 /* Suggest dropdown */
 .suggest-box {
   position: absolute;
-  z-index: 50;
+  z-index: 100;
   background: var(--card-bg);
   color: var(--text);
   border: 1px solid var(--border);
   border-radius: 8px;
-  box-shadow: 0 8px 24px rgba(0,0,0,.12);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, .12);
   margin-top: 4px;
   min-width: 220px;
   max-height: 240px;
   overflow: auto;
   padding: 4px;
+  inset-inline-start: 0;
 }
 .suggest-item {
   padding: 6px 8px;
@@ -603,6 +607,73 @@ li {
 .suggest-item:hover,
 .suggest-item.active {
   background: var(--hover-bg);
+}
+
+/* Non-selectable section headers inside suggest dropdown */
+.suggest-group {
+    padding: 4px 8px;
+    margin-top: 4px;
+    font-weight: 600;
+    color: var(--muted);
+    cursor: default;
+}
+
+/* Saved seaches chips */
+.saved-chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+}
+.chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 0.25rem 0.5rem;
+    border: 1px solid var(--border);
+    border-radius:  9999px;
+    background: var(--card-bg);
+    color: var(--text);
+    cursor: pointer;
+}
+.chip:hover {
+    background: var(--hover-bg);
+}
+.chip--ghost {
+    background: transparent;
+    color: var(--muted);
+}
+
+/* Inline clear button inside the search input */
+.input-wrap { 
+    position: relative; 
+    display: inline-block; 
+}
+.input-wrap input[type="search"] { 
+    padding-right: 2rem; 
+}
+.input-clear {
+    position: absolute; 
+    right: 0.5rem; 
+    top: 50%; 
+    transform: translateY(-50%);
+    border: 0; 
+    background: transparent; 
+    cursor: pointer; 
+    line-height: 1;
+    font-size: 1rem; 
+    opacity: .6;
+}
+.input-clear:hover, .input-clear:focus { 
+    opacity: 1; 
+}
+.input-clear[hidden] { 
+    display: none; 
+}
+/* hide default browser clear (Chrome, Edge, Safari) */
+input[type="search"]::-webkit-search-cancel-button {
+  -webkit-appearance: none;
+  appearance: none;
+  display: none;
 }
 
 #goal-widget, #reading-log {
@@ -1099,9 +1170,9 @@ li {
 }
 
 @media (max-width: 600px) {
-    .settings__label {
-        display: none;
-    }
+    .settings__label { display: none; }
+    .suggest-box { max-height: 200px; }
+    .suggest-item { padding: 6px 7px; }
 }
 
 /* Accessibility: disable spin + pulse for reduced motion */

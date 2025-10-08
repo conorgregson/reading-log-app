@@ -84,17 +84,42 @@ See the full [Roadmap](./docs/roadmap.md) for milestones and timelines.
 
 ## 📸 Screenshots
 
+## 📸 Screenshots
+
+> _Updated for **v1.6.0 — Search & Filters**_
+
 ### Main UI
-![Main UI](docs/images/ui-main.png)
+![Main UI](images/ui-main.png)
 
 ### Goals & Sessions
-![Goals & Sessions](docs/images/ui-goals.png)
+![Goals & Sessions](images/ui-goals.png)
 
 ### Books List (populated)
-![Books List](docs/images/ui-books.png)
+![Books List](images/ui-books.png)
+
+### Bulk Edit Dialog
+![Bulk Edit](images/ui-bulk-edit.png)
 
 ### Dark Mode
-![Dark Mode](docs/images/ui-dark.png)
+![Dark Mode](images/ui-dark.png)
+
+### Settings Dropdown
+![Settings Dropdown](images/ui-settings.png)
+
+### Search & Filters
+![Search & Filters](images/ui-search.png)
+
+### Multi-Select Filters
+![Multi-Select Filters](images/ui-filters.png)
+
+### Saved Searches
+![Saved Searches](images/ui-saved-filters.png)
+
+### Search Results Example
+![Search Results](images/ui-results.png)
+
+### Installed App View
+![Installed App](images/ui-installed.png)
 
 ---
 

@@ -234,7 +234,13 @@
             <h2>Search & Filters</h2>
             <div class="row">
                 <label class="sr-only" for="search">Search</label>
-                <input id="search" type="search" placeholder="Search title, author, series, genre, ISBN." />
+                <div class="input-wrap">
+                    <input id="search" type="search" placeholder="Search title, author, series, genre, ISBN." />
+                    <button id="clear-query" type="button" class="input-clear" aria-label="Clear search" title="Clear"> &times; </button>
+                </div>
+                <button id="search-btn" type="button" class="r-btn r-btn--primary r-btn--sm" aria-label="Run search" hidden disabled>
+                    Search
+                </button>
                 <label class="sr-only" for="sort">Sort</label>
                 <select id="sort" aria-label="Sort">
                     <option value="createdAt:desc">Newest</option>
@@ -271,7 +277,21 @@
             </div>
 
             <div class="row">
-                <button id="clear-filters" type="button">Clear Filters</button>
+                <button id="clear-filters" type="button" class="r-btn r-btn--sm r-btn--ghost">Clear Filters</button>
+            </div>
+
+            <!-- Saved searches -->
+            <div class="row">
+                <button id="save-search" type="button" class="r-btn r-btn--primary">Save current</button>
+                <div id="saved-searches" class="saved-chips" aria-label="Saved searches"></div>
+                <!-- Template for a saved-search chip trio (Apply · Rename · Delete) -->
+                 <template id="saved-chip-template">
+                    <span class="saved-chip-set">
+                        <button class="chip" data-id title="Apply saved search"></button>
+                        <button class="chip chip--ghost" data-edit title="Rename">&#9998;</button>
+                        <button class="chip chip--ghost" data-del title="Delete">&times;</button>
+                    </span>
+                 </template>
             </div>
 
             <div class="row">

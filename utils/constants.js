@@ -43,15 +43,18 @@ export function applyTextFixes(str) {
 
 // Search config (kept here so UI + engine share one source of truth)
 export const FUZZY_DEFAULTS = Object.freeze({
-    token: 1,   // regular tokens
-    phrase: 0,  // inside quotes
-    looser: 2   // after "Try looser search"
+    token: 2,   // allow small typos during normal typing
+    phrase: 1,  // slightly stricter inside quotes
+    looser: 3   // extra-forgiving for the "Try looser search" CTA
 });
 
 export const SEARCH_FIELD_WEIGHTS = Object.freeze({
-    title: 2,
-    author: 1,
-    series: 1,
+    // Higher = stronger influence on ranking
+    title: 9,
+    author: 7,
+    series: 5,
+    genre: 3,
+    isbn: 2,
     notes: 0.5
 });
 

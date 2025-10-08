@@ -105,7 +105,7 @@ Released: Sep 2025
 
 ---
 
-### 📕 Version 1.5 — Book Enhancements
+### ✅ Version 1.5 — Book Enhancements
 - [x] Add Series / Stand-alone flag for books
   - _AC_: User can mark book as part of a series or stand-alone.
 - [x] Add Digital/ Physical flag for books
@@ -123,19 +123,20 @@ Released: Sep 2025
 Released: Sep 2025
 
 ---
-### 🔍 Version 1.6 — Search & Filters
-- [ ] Add dedicated **Search button** (in addition to instant search)  
+
+### ✅ Version 1.6 — Search & Filters
+- [x] Add dedicated **Search button** (in addition to instant search)  
   - _AC:_ Search can be triggered explicitly via button.  
-- [ ] Autocomplete suggestions for queries (author, title, series, genre)  
+- [x] Autocomplete suggestions for queries (author, title, series, genre)  
   - _AC:_ Typing in search shows dropdown of likely matches.  
-- [ ] Advanced filters (multi-select for genre/status)  
+- [x] Advanced filters (multi-select for genre/status)  
   - _AC:_ User can filter by multiple genres or statuses simultaneously. 
-- [ ] Save favorite searches/filters  
+- [x] Save favorite searches/filters  
   - _AC:_ User can save a filter combo and reapply it with one click.  
-- [ ] Clear all filters button  
+- [x] Clear all filters button  
   - _AC:_ Reset restores unfiltered book list instantly.   
 
-Planned Q4 2025
+Released: Oct 2025
 
 ---
 
