@@ -84,8 +84,6 @@ See the full [Roadmap](./docs/roadmap.md) for milestones and timelines.
 
 ## 📸 Screenshots
 
-## 📸 Screenshots
-
 > _Updated for **v1.6.0 — Search & Filters**_
 
 ### Main UI
