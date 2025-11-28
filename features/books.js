@@ -28,6 +28,17 @@ const STATUS_LABEL = {
   [STATUS.FINISHED]: "Finished",
 }
 
+// v1.7.0 - Past goals (local, module-scoped)
+const GOALS_HIST_KEY = "readr:goals-history:v1";
+const safeLoadGoals = () => { 
+  try { return JSON.parse(localStorage.getItem(GOALS_HIST_KEY) || "[]"); } 
+  catch { return []; } 
+};
+const safeSaveGoals = (arr=[]) => { 
+  try { localStorage.setItem(GOALS_HIST_KEY, JSON.stringify(arr)); } 
+  catch {} 
+};
+
 // Public API -----------------------------------------------------------------
 export async function init({ adapters, ui } = {}) {
   A = adapters;
@@ -41,6 +52,8 @@ export async function init({ adapters, ui } = {}) {
   render();
   wireBulkUI();
   attachControlEvents();  // search, filters, sort, reset
+  // v1.7.0: render Past Goals panel on boot (if present in DOM)
+  renderPastGoals();
 
   // Cross-tab sync of filters/prefs
   window.addEventListener("storage", (e) => {
@@ -1168,6 +1181,22 @@ function attachControlEvents() {
   }
 }
 
+// --- v1.7.0 Past Goals wiring (Book Goals) --------------------------------
+// Non-invasive: read current inputs when user clicks "Save Book Goals"
+const saveGoalsBtn = document.getElementById("save-book-goals");
+const monthlyEl = document.getElementById("goal-monthly-books");
+const yearlyEl  = document.getElementById("goal-yearly-books");
+if (saveGoalsBtn && monthlyEl && yearlyEl) {
+  saveGoalsBtn.addEventListener("click", () => {
+    const monthVal = Number.parseInt(monthlyEl.value, 10);
+    const yearVal  = Number.parseInt(yearlyEl.value, 10);
+    const m = Number.isFinite(monthVal) && monthVal >= 0 ? monthVal : 0;
+    const y = Number.isFinite(yearVal)  && yearVal  >= 0 ? yearVal  : 0;
+    saveGoalToHistory({ monthGoal: m, yearGoal: y });
+    renderPastGoals(); // refresh panel
+  });
+}
+
 // Debounce helper for smoothing rapid input (e.g., typing in search box)
 function debounce(fn, ms = 180) {
   let t;
@@ -1541,4 +1570,104 @@ function makeProviders(A) {
     series: () => uniqueFieldValues(all(), "series"),
     genres: () => uniqueFieldValues(all(), "genre"),
   };
+}
+
+// --- v1.7.0 Past Goals: save + render --------------------------------------
+/**
+ * Append/replace the current period's goals.
+ * We store one entry per YYYY-MM period; newest wins.
+ */
+function saveGoalToHistory({ monthGoal = 0, yearGoal = 0 } = {}) {
+  const now = new Date();
+  const period = now.toISOString().slice(0, 7); // "YYYY-MM"
+  const savedAt = now.toISOString();
+  let hist = safeLoadGoals();
+  // Replace any existing row for this period
+  hist = hist.filter((r) => r && r.period !== period);
+  hist.push({ period, monthGoal, yearGoal, savedAt });
+  // Keep most recent first; cap to a sensible length (optional)
+  hist.sort((a, b) => (b.period || "").localeCompare(a.period || ""));
+  if (hist.length > 60) hist = hist.slice(0, 60); // ~5 years
+  safeSaveGoals(hist);
+}
+
+/**
+ * Render the <li> list inside #past-goals-list if present.
+ * Shows newest first, friendly month labels, and year goal alongside.
+ */
+function renderPastGoals() {
+  const listEl = document.getElementById("past-goals-list");
+  if (!listEl) return; // panel not in DOM yet (e.g., older HTML)
+  listEl.innerHTML = "";
+
+  const hist = safeLoadGoals();
+  if (!Array.isArray(hist) || hist.length === 0) {
+    const li = document.createElement("li");
+    li.className = "muted";
+    li.textContent = "No past goals yet.";
+    listEl.appendChild(li);
+    return;
+  }
+
+  // Newest first
+  const rows = [...hist].sort((a, b) => (b.period || "").localeCompare(a.period || ""));
+  rows.forEach(({ period, monthGoal = 0, yearGoal = 0 }) => {
+    const li = document.createElement("li");
+    // Robust date label; fallback to raw period if Date parsing fails
+    const label = (() => {
+      const d = new Date(`${period}-01T00:00:00`);
+      return Number.isFinite(d.getTime()) ? d.toLocaleString(undefined, { month: "long", year: "numeric" }) : period;
+    })();
+    li.textContent = `${label} — ${monthGoal} books / Year goal: ${yearGoal}`;
+    listEl.appendChild(li);
+  });
+}
+
+/**
+ * One-time migration: if no history exists, seed the current month using
+ * the values already present in the UI (inputs or stats spans).
+ * - Inputs: #goal-monthly-books, #goal-yearly-books
+ * - Stats:  #books-goal-month,   #books-goal-year
+ * (These elements exist in Book Goals section.):contentReference[oaicite:0]{index=0}
+ */
+function seedGoalsHistoryOnce() {
+  try {
+    // Already seeded or history already present? bail.
+    if (localStorage.getItem(GOALS_SEEDED_KEY) === "1") return;
+    const hist = safeLoadGoals();
+    if (Array.isArray(hist) && hist.length > 0) { markSeeded(); return; }
+
+    // Prefer inputs if the user has values there…
+    const monthlyIn = document.getElementById("goal-monthly-books");   // input
+    const yearlyIn  = document.getElementById("goal-yearly-books");    // input
+    // …otherwise fall back to the stats spans if present.
+    const monthSpan = document.getElementById("books-goal-month");     // span
+    const yearSpan  = document.getElementById("books-goal-year");      // span
+
+    const parseNum = (v) => {
+      const n = Number.parseInt(String(v ?? "").trim(), 10);
+      return Number.isFinite(n) && n >= 0 ? n : 0;
+    };
+
+    let monthGoal = 0;
+    let yearGoal  = 0;
+
+    if (monthlyIn || yearlyIn) {
+      monthGoal = parseNum(monthlyIn?.value);
+      yearGoal  = parseNum(yearlyIn?.value);
+    }
+    if ((!monthGoal && !yearGoal) && (monthSpan || yearSpan)) {
+      monthGoal = parseNum(monthSpan?.textContent);
+      yearGoal  = parseNum(yearSpan?.textContent);
+    }
+
+    // Nothing to seed? mark + exit.
+    if (!monthGoal && !yearGoal) { markSeeded(); return; }
+
+    // Save as current period and mark as seeded.
+    saveGoalToHistory({ monthGoal, yearGoal });
+    markSeeded();
+  } catch {
+    // swallow; seeding is best-effort
+  }
 }

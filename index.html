@@ -1,588 +1,893 @@
 <!DOCTYPE html>
 <html lang="en">
-    <head>
-        <meta charset="UTF-8" />
-        <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-
-        <!-- Open Graph / Twitter -->
-        <meta property="og:title" content="Readr — Turn pages into progress" />
-        <meta property="og:description" content="Minimal, offline-first reading log with PWA support and JSON backup/import." />
-        <meta property="og:type" content="website" />
-        <meta property="og:url" content="https://conorgregson.github.io/reading-log-app/" />
-        <meta property="og:image" content="https://conorgregson.github.io/reading-log-app/images/social-card-teal-white-stacked.png" />
-        <meta name="twitter:card" content="summary_large_image" />
-        <meta name="twitter:title" content="Readr — Turn pages into progress" />
-        <meta name="twitter:description" content="Minimal, offline-first reading log with PWA support and JSON backup/import." />
-        <meta name="twitter:image" content="https://conorgregson.github.io/reading-log-app/images/social-card-teal-white-stacked.png" />
-
-        <title>Readr</title>
-        <!-- Default (light mode) -->
-        <link rel="icon" type="image/x-icon" href="images/favicon_teal.ico" media="(prefers-color-scheme: light)">
-        <!-- Dark mode -->
-        <link rel="icon" type="image/x-icon" href="images/favicon_white.ico" media="(prefers-color-scheme: dark)">
-        
-        <link rel="icon" href="images/readr_logo_R_teal_master.png">
-        <link rel="apple-touch-icon" href="images/readr_icon_192.png">
-        <link rel="manifest" href="manifest.json">
-
-        <link rel="stylesheet" href="styles.css">
-    </head>
-    <body>
-        <noscript>
-            <p class="noscript-warning">
-                Readr needs JavaScript to run. Please enable JavaScript in your browser.
-            </p>
-        </noscript>
-
-        <header id="toolbar" class="row">
-            <!-- App Logo -->
-            <div class="app-logo">
-                <img src="images/readr_logo_R_teal_master.png" alt="Readr logo" class="app-logo__icon">
-                <span class="app-logo__text">eadr</span>
-            </div>
-
-            <div class="spacer"></div>
-            
-            <div class="settings">
-                <!-- Settings trigger (desktop shows label, mobile hides via CSS) -->
-                <button id="settings-trigger"
-                        class="settings__trigger r-btn r-btn--icon"
-                        aria-haspopup="menu"
-                        aria-expanded="false"
-                        aria-controls="settings-menu"
-                        title="Settings">
-                <span aria-hidden="true">⚙️</span>
-                <span class="settings__label">Settings</span>
-                </button>
-
-                <!-- Settings dropdown -->
-                <div id="settings-menu"
-                        class="settings__menu"
-                        role="menu"
-                        aria-labelledby="settings-menu-label"
-                        hidden>
-                    <h2 id="settings-menu-label" class="sr-only">Settings</h2>
-
-                    <!-- Group 1: Mode & Install -->
-                    <button id="mode-toggle"
-                            class="r-btn r-btn--sm"
-                            role="menuitemcheckbox"
-                            aria-checked="false"
-                            tabindex="-1">
-                        Switch Mode
-                    </button>
-
-                    <button id="install-app"
-                            class="r-btn r-btn--sm btn-install"
-                            role="menuitem"
-                            aria-disabled="true"
-                            tabindex="-1">
-                        Install app
-                        <span id="install-status"
-                              class="status-pill unavailable"
-                              aria-live="polite">
-                            Unavailable
-                        </span>
-                    </button>
-
-                    <hr class="menu-sep" role="separator" aria-orientation="horizontal">
-
-                    <!-- Group 2: Data management -->
-                    <button id="export-proxy"
-                            class="r-btn r-btn--sm"
-                            role="menuitem"
-                            tabindex="-1">
-                        Backup data
-                    </button>
-
-                    <button id="import-proxy"
-                            class="r-btn r-btn--sm"
-                            role="menuitem"
-                            aria-controls="import-file"
-                            tabindex="-1">
-                        Import data
-                    </button>
-                    <input id="import-file"
-                            type="file"
-                            accept="application/json"
-                            hidden
-                            aria-hidden="true">
-
-                    <hr class="menu-sep" role="separator" aria-orientation="horizontal">
-
-                    <!-- Group 3: Resets -->
-                    <button id="prefs-reset"
-                            class="r-btn r-btn--sm btn-reset"
-                            role="menuitem"
-                            tabindex="-1">
-                        Reset Preferences
-                    </button>
-
-                    <button id="reset-profile"
-                            class="r-btn r-btn--sm"
-                            role="menuitem"
-                            tabindex="-1">
-                        Reset Profile
-                    </button>
-
-                    <button id="reset-data"
-                            class="r-btn r-btn--sm"
-                            role="menuitem"
-                            tabindex="-1">
-                        Reset Data
-                    </button>
-
-                    <button id="clear-runtime-cache"
-                            class="r-btn r-btn--sm"
-                            role="menuitem"
-                            tabindex="-1">
-                        Clear Cache
-                    </button>
-
-                    <hr class="menu-sep" role="separator" aria-orientation="horizontal">
-
-                    <!-- Group 4: Maintenance -->
-                    <button id="check-updates"
-                            class="r-btn r-btn--sm"
-                            role="menuitem"
-                            tabindex="-1">
-                        Check Updates
-                    </button>
-                </div>
-            </div>
-            <!-- Screen-reader-only help text, referenced by aria-describedby -->
-            <p id="menu-help" class="sr-only">
-                Use up and down arrows to navigate. Press Enter to activate, Escape to close.
-            </p>
-        </header>
-
-        <!-- Add a Book -->
-        <section id="add-book">
-            <h2>Add a Book</h2>
-            <form id="book-form">
-                <label class="sr-only" for="title">Title</label>
-                <input type="text" id="title" placeholder="Title" required />
-
-                <label class="sr-only" for="author">Author</label>
-                <input type="text" id="author" placeholder="Author" required list="author-options-add" /> 
-                <datalist id="author-options-add"></datalist>
-
-                <label class="sr-only" for="series">Series</label>
-                <input type="text" id="series" placeholder="Series (optional)" list="series-options-add"/>
-                <datalist id="series-options-add"></datalist>
-
-                <label class="sr-only" for="seriesType">Series or Standalone</label>
-                <select id="seriesType" aria-label="Series or Standalone">
-                    <option value="series">Part of a series</option>
-                    <option value="standalone">Standalone</option>
-                </select>
-
-                <label class="sr-only" for="genre">Genre</label>
-                <input type="text" id="genre" placeholder="Genre (optional)" list="genre-options" />
-                <datalist id="genre-options"></datalist>
-
-                <label class="sr-only" for="format">Format</label>
-                <select id="format" aria-label="Format">
-                    <option value="">Format (choose)</option>
-                    <option value="physical">Physical</option>
-                    <option value="digital">Digital</option>
-                </select>
-
-                <!--Format subtype -->
-                <label class="sr-only" for="formatSubtype">Format subtype</label>
-                <select id="formatSubtype" aria-label="Format subtype (optional)">
-                    <option value="">Subtype (optional)</option>
-                    <!-- Physical -->
-                    <option value="Hardcover" data-parent="physical">Hardcover</option>
-                    <option value="Paperback" data-parent="physical">Paperback</option>
-                    <!-- Digital -->
-                    <option value="eBook" data-parent="digital">eBook</option>
-                    <option value="Audiobook" data-parent="digital">Audiobook</option>
-                    <option value="PDF" data-parent="digital">PDF</option>
-                </select>
-
-                <label class="sr-only" for="isbn">ISBN</label>
-                <input 
-                    type="text" 
-                    id="isbn" 
-                    inputmode="numeric" 
-                    aria-describedby="isbn-hint"
-                    placeholder="ISBN (optional, 10 or 13 digits; dashes ok)" />
-                <div id="isbn-hint"
-                     class="error-text"
-                     aria-live="polite"
-                     aria-atomic="true"
-                     hidden >
-                     ISBN must be 10 or 13 digits; dashes/spaces allowed.
-                </div>
-
-                <label class="sr-only" for="status">Status</label>
-                <select id="status" aria-label="Status">
-                    <option value="planned" selected>Planned</option>
-                    <option value="reading">Reading</option>
-                    <option value="finished">Finished</option>
-                </select>
-
-                <label class="sr-only" for="plannedMonth">Planned month (TBR)</label>
-                <input type="month" id="plannedMonth" aria-label="Planned month (TBR)" />
-
-                <button type="submit" class="r-btn r-btn--primary">Add Book</button>
-            </form>
-        </section>
-
-        <section id="controls">
-            <h2>Search & Filters</h2>
-            <div class="row">
-                <label class="sr-only" for="search">Search</label>
-                <div class="input-wrap">
-                    <input id="search" type="search" placeholder="Search title, author, series, genre, ISBN." />
-                    <button id="clear-query" type="button" class="input-clear" aria-label="Clear search" title="Clear"> &times; </button>
-                </div>
-                <button id="search-btn" type="button" class="r-btn r-btn--primary r-btn--sm" aria-label="Run search" hidden disabled>
-                    Search
-                </button>
-                <label class="sr-only" for="sort">Sort</label>
-                <select id="sort" aria-label="Sort">
-                    <option value="createdAt:desc">Newest</option>
-                    <option value="createdAt:asc">Oldest</option>
-                    <option value="title:asc">Title A→Z</option>
-                    <option value="title:desc">Title Z→A</option>
-                    <option value="author:asc">Author A→Z</option>
-                    <option value="author:desc">Author Z→A</option>
-                    <option value="series:asc">Series A→Z</option>
-                    <option value="series:desc">Series Z→A</option>
-                </select>
-            </div>
-
-            <div class="row">
-                <label class="filter" for="f-status">Status
-                    <select id="f-status" multiple size="3">
-                        <option value="planned">Planned</option>
-                        <option value="reading">Reading</option>
-                        <option value="finished">Finished</option>
-                    </select>
-                </label>
-
-                <label class="filter" for="f-authors">Author
-                    <select id="f-authors" multiple size="4"></select>
-                </label>
-
-                <label class="filter" for="f-genres">Genre
-                    <select id="f-genres" multiple size="4"></select>
-                </label>
-
-                <label class="filter" for="f-series">Series
-                    <select id="f-series" multiple size="4"></select>
-                </label>
-            </div>
-
-            <div class="row">
-                <button id="clear-filters" type="button" class="r-btn r-btn--sm r-btn--ghost">Clear Filters</button>
-            </div>
-
-            <!-- Saved searches -->
-            <div class="row">
-                <button id="save-search" type="button" class="r-btn r-btn--primary">Save current</button>
-                <div id="saved-searches" class="saved-chips" aria-label="Saved searches"></div>
-                <!-- Template for a saved-search chip trio (Apply · Rename · Delete) -->
-                 <template id="saved-chip-template">
-                    <span class="saved-chip-set">
-                        <button class="chip" data-id title="Apply saved search"></button>
-                        <button class="chip chip--ghost" data-edit title="Rename">&#9998;</button>
-                        <button class="chip chip--ghost" data-del title="Delete">&times;</button>
-                    </span>
-                 </template>
-            </div>
-
-            <div class="row">
-                <div class="filter" id="tbr-filter">
-                    <input id="tbr-only" type="checkbox" />
-                    <span>Show only TBR for</span>
-                    <label class="sr-only" for="tbr-month">TBR month</label>
-                    <input id="tbr-month" type="month" />
-                </div>
-            </div>
-
-            <!-- Screen reader live status -->
-            <div id="search-status" aria-live="polite" class="visually-hidden"></div>
-
-            <!-- Empty query tip -->
-            <div id="books-empty-hint" class="muted" hidden>
-                Tip: use quotes for phrases, e.g. "lord of".
-            </div>  
-        </section>
-
-        <section id="book-list">
-            <h2>Books</h2>
-            <!-- Bulk toolbar -->
-             <div id="bulk-toolbar" class="row" aria-label="Bulk edit toolbar">
-                <label class="check-all">
-                    <input type="checkbox" id="check-all" aria-label="Select all books" />
-                    <span class="muted">Select all</span>
-                </label>
-                <span id="bulk-selected-count" class="muted" aria-live="polite" aria-atomic="true">No books selected</span>
-                <div class="spacer"></div>
-                <button id="bulk-edit-btn" class="r-btn r-btn--sm r-btn--ghost" disabled aria-disabled="true" type="button">
-                    Bulk Edit
-                </button>
-             </div>
-
-            <!-- Status button template -->
-            <template id="status-btn-temp">
-                <button class="r-btn r-btn--sm status-btn" type="button" data-action="">
-                    <span class="status-label">Start Reading</span>
-                </button>
-            </template>
-            <ul id="books"></ul>
-            <div id="books-empty" class="muted" hidden>
-                No books yet — add your first one above.
-            </div>
-        </section>
-
-        <!-- Bulk Edit Dialog -->
-        <dialog id="bulk-edit-dialog" 
-                role="dialog"
-                aria-modal="true"
-                aria-labelledby="bulk-title"
-                aria-describedby="bulk-desc">
-            <form method="dialog" id="bulk-form">
-                <h3 id="bulk-title">Bulk Edit</h3>
-                <p id="bulk-desc" class="muted">Apply one change to all selected books.</p>
-
-                <fieldset>
-                    <legend class="sr-only">Bulk action</legend>
-                    <label><input type="radio" name="bulkAction" value="status" checked /> Change status</label>
-                    <label><input type="radio" name="bulkAction" value="genre" /> Change genre</label>
-                    <label><input type="radio" name="bulkAction" value="series" /> Change series</label>
-                    <label><input type="radio" name="bulkAction" value="seriesType" /> Change series type</label>
-                    <label><input type="radio" name="bulkAction" value="format" /> Change format</label>
-                    <label><input type="radio" name="bulkAction" value="formatSubtype" /> Change format subtype</label>
-                    <label><input type="radio" name="bulkAction" value="author" /> Change author</label>
-                </fieldset>
-
-                <div id="bulk-status-wrap">
-                    <label for="bulk-status">New status</label>
-                    <select id="bulk-status">
-                        <option value="planned">Planned</option>
-                        <option value="reading">Reading</option>
-                        <option value="finished">Finished</option>
-                    </select>
-                </div>
-
-                <div id="bulk-genre-wrap" hidden>
-                    <label for="bulk-genre">New genre</label>
-                    <input id="bulk-genre" list="genre-options" placeholder="e.g., Fantasy">
-                </div>
-
-                <div id="bulk-series-wrap" hidden>
-                    <label for="bulk-series">New series</label>
-                    <input id="bulk-series" list="series-options" placeholder="e.g., The Expanse">
-                    <datalist id="series-options"></datalist>
-                </div>
-
-                <div id="bulk-series-type-wrap" hidden>
-                    <label for="bulk-series-type">New series type</label>
-                    <input id="bulk-series-type" list="series-type-options" placeholder="e.g., Standalone">
-                    <datalist id="series-type-options"></datalist>
-                </div>
-
-                <div id="bulk-format-wrap" hidden>
-                    <label for="bulk-format">New format</label>
-                    <input id="bulk-format" list="format-options" placeholder="e.g., Physical">
-                    <datalist id="format-options"></datalist>
-                </div>
-
-                <div id="bulk-formatSubtype-wrap" hidden>
-                    <label for="bulk-formatSubtype">New format subtype</label>
-                    <input id="bulk-formatSubtype" list="format-subtype-options" placeholder="eg., Hardcover, eBook">
-                    <datalist id="format-subtype-options">
-                        <option value="Hardcover"></option>
-                        <option value="Paperback"></option>
-                        <option value="eBook"></option>
-                        <option value="Audiobook"></option>
-                        <option value="PDF"></option>
-                    </datalist>
-                </div>
-
-                <div id="bulk-author-wrap" hidden>
-                    <label for="bulk-author">New author</label>
-                    <input id="bulk-author" list="author-options" placeholder="e.g., Arthur C. Clarke">
-                    <datalist id="author-options"></datalist>
-                    <p class="muted" id="author-tip">
-                        Tip: Only bulk-change author if these books truly share the same author.
-                    </p>
-                </div>
-
-                <div class="dialog__actions">
-                    <button id="bulk-cancel" type="button" value="cancel" class="r-btn r-btn--ghost">Cancel</button>
-                    <button id="bulk-apply" type="submit" class="r-btn r-btn--primary">Apply to selected</button>
-                </div>
-            </form>
-        </dialog>
-
-        <section id="goal-widget">
-            <h2 id="goal-title">Daily Goal</h2>
-            <div class="row" role="group" aria-labelledby="goal-title">
-                <label>Type
-                    <select id="goal-type">
-                        <option value="pages">Pages</option>
-                        <option value="minutes">Minutes</option>
-                    </select>   
-                </label>
-
-                <label>Value
-                    <div class="nudge-group">
-                        <button id="goal-dec" type="button" aria-label="Decrease daily goal">-</button> 
-                        <input 
-                            id="goal-value" 
-                            type="number" 
-                            min="1" 
-                            placeholder="e.g., 20" 
-                            inputmode="numeric"
-                            required
-                            aria-required="true"
-                        />
-                        <button id="goal-inc" type="button" aria-label="Increase daily goal">+</button>
-                    </div>
-                </label>
-
-                <button id="save-goal" type="button" class="r-btn r-btn--primary">Save Goal</button>
-                <button id="quick-toggle-metric" 
-                        type="button" 
-                        class="r-btn r-btn--ghost" 
-                        aria-pressed="false" 
-                        title="Quick toggle between Pages/Minutes">
-                    Toggle Metric
-                </button>
-            </div>
-
-            <div id="today-progress">
-                <div 
-                    id="today-bar"
-                    role="progressbar"
-                    aria-describedby="today-tooltip"
-                    aria-label="Daily reading progress"
-                    aria-valuemin="0"
-                    aria-valuenow="0"
-                    aria-valuemax="0"
-                    tabindex="0"
-                    class="has-tooltip"
-                >
-                    <span id="today-bar-fill"></span>
-                    <div id="today-tooltip" role="tooltip" aria-live="polite" aria-hidden="true"></div>
-                </div>
-                <div id="today-stats">
-                    <strong id="today-amount">0</strong> 
-                    <span id="today-unit">pages</span>
-                    / 
-                    <span id="today-goal">0</span>
-                    <span id="today-pct" aria-hidden="true" style="margin-left:.5rem;">(0%)</span>
-                    <span id="today-met" aria-live="polite"></span>
-                </div>
-                <div id="today-remaining" class="muted" aria-live="polite">0 to go</div>
-            </div>
-
-            <div id="streaks">
-                <div>Current streak: <strong id="streak-current">0</strong> days</div>
-                <div>Max streak: <strong id="streak-max">0</strong> days</div>
-            </div>
-        </section>
-
-        <section id="book-goals">
-            <h2>Book Goals</h2>
-            <div class="row" role="group" aria-labelledby="book-goals">
-                <label>Monthly target
-                    <input id="goal-monthly-books" type="number" min="0" placeholder="e.g., 2" />
-                </label>
-                <label> Yearly target
-                    <input id="goal-yearly-books" type="number" min="0" placeholder="e.g., 20" />
-                </label>
-                <button id="save-book-goals" type="button" class="r-btn r-btn--primary">Save Book Goals</button>
-            </div>
-
-            <div class="row" id="book-goals-stats">
-                <div>This month: <strong id="books-finished-month">0</strong> / <span id="books-goal-month">0</span></div>
-                <div>This year: <strong id="books-finished-year">0</strong> / <span id="books-goal-year">0</span></div>
-            </div>
-        </section>
-
-        <!-- Reading Log -->
-        <section id="reading-log">
-            <h2>Add Reading Session</h2>
-            <form id="log-form">
-                <label class="sr-only" for="log-book">Book</label>
-                <select id="log-book" required></select>
-
-                <label class="sr-only" for="log-pages">Pages read</label>
-                <input id="log-pages" type="number" min="0" placeholder="Pages read" />
-
-                <label class="sr-only" for="log-mins">Minutes</label>
-                <input id="log-mins" type="number" min="0" placeholder="Minutes" />
-                
-                <label class="sr-only" for="log-date">Date</label>
-                <input id="log-date" type="date" />
-                <button type="submit" class="r-btn r-btn--primary">Add Session</button>
-            </form>
-        </section>
-
-        <section id="Session-history">
-            <h2>Session History</h2>
-
-            <!-- Screen-reader announcement area for Session History -->
-            <div id="history-status" class="sr-only" aria-live="polite" aria-atomic="true"></div>
-
-            <div class="row">
-                <label class="filter" for="history-book">Book
-                    <select id="history-book">
-                        <option value="">All books</option>
-                    </select>
-                </label>
-
-                <label class="filter" for="history-type">Type
-                    <select id="history-type">
-                        <option value="">Any</option>
-                        <option value="pages">Pages</option>
-                        <option value="minutes">Minutes</option>
-                    </select>
-                </label>
-
-                <label class="filter" for="history-date">Date
-                    <input id="history-date" type="date" />
-                </label>
-
-                <button id="history-clear" type="button" class="r-btn r-btn--ghost">Clear</button>
-            </div>
-
-            <div class="table-wrap">
-                <table class="table" aria-describedby="history-help">
-                    <thead>
-                        <tr>
-                            <th>Date</th>
-                            <th>Book</th>
-                            <th>Pages</th>
-                            <th>Minutes</th>
-                            <th></th>
-                        </tr>
-                    </thead>
-                    <tbody id="history-body"></tbody>
-                </table>
-            </div>
-
-            <p id="history-help" class="sr-only">
-                Use the filters to narrow results. Edit a row inline and press Save, or Undo from the toast to revert.
-            </p>
-
-            <div class="row" id="history-pager">
-                <button id="history-prev" type="button" class="r-btn  r-btn--ghost" aria-label="Previous page">Prev</button>
-                <span id="history-page" class="muted"></span>
-                <button id="history-next" type="button" class="r-btn  r-btn--ghost" aria-label="Next page">Next</button>
-            </div>
-        </section>
-
-        <!--- App toasts -->
-        <div id="toasts" aria-live="polite" aria-atomic="true"></div>
-
-        <script type="module" src="./app.js"></script>
-        <script type="module" src="./dev/smoke.js"></script>
-    </body>
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+    <!-- Open Graph / Twitter -->
+    <meta property="og:title" content="Readr — Turn pages into progress" />
+    <meta
+      property="og:description"
+      content="Minimal, offline-first reading log with PWA support and JSON backup/import."
+    />
+    <meta property="og:type" content="website" />
+    <meta
+      property="og:url"
+      content="https://conorgregson.github.io/reading-log-app/"
+    />
+    <meta
+      property="og:image"
+      content="https://conorgregson.github.io/reading-log-app/images/social-card-teal-white-stacked.png"
+    />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="Readr — Turn pages into progress" />
+    <meta
+      name="twitter:description"
+      content="Minimal, offline-first reading log with PWA support and JSON backup/import."
+    />
+    <meta
+      name="twitter:image"
+      content="https://conorgregson.github.io/reading-log-app/images/social-card-teal-white-stacked.png"
+    />
+
+    <title>Readr</title>
+    <!-- Default (light mode) -->
+    <link
+      rel="icon"
+      type="image/x-icon"
+      href="images/favicon_teal.ico"
+      media="(prefers-color-scheme: light)"
+    />
+    <!-- Dark mode -->
+    <link
+      rel="icon"
+      type="image/x-icon"
+      href="images/favicon_white.ico"
+      media="(prefers-color-scheme: dark)"
+    />
+
+    <link rel="icon" href="images/readr_logo_R_teal_master.png" />
+    <link rel="apple-touch-icon" href="images/readr_icon_192.png" />
+    <link rel="manifest" href="manifest.json" />
+
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <noscript>
+      <p class="noscript-warning">
+        Readr needs JavaScript to run. Please enable JavaScript in your browser.
+      </p>
+    </noscript>
+
+    <header id="toolbar" class="row">
+      <!-- App Logo -->
+      <div class="app-logo">
+        <img
+          src="images/readr_logo_R_teal_master.png"
+          alt="Readr logo"
+          class="app-logo__icon"
+        />
+        <span class="app-logo__text">eadr</span>
+      </div>
+
+      <div class="spacer"></div>
+
+      <div class="settings">
+        <!-- Settings trigger (desktop shows label, mobile hides via CSS) -->
+        <button
+          id="settings-trigger"
+          class="settings__trigger r-btn r-btn--icon"
+          aria-haspopup="menu"
+          aria-expanded="false"
+          aria-controls="settings-menu"
+          title="Settings"
+        >
+          <span aria-hidden="true">⚙️</span>
+          <span class="settings__label">Settings</span>
+        </button>
+
+        <!-- Settings dropdown -->
+        <div
+          id="settings-menu"
+          class="settings__menu"
+          role="menu"
+          aria-labelledby="settings-menu-label"
+          hidden
+        >
+          <h2 id="settings-menu-label" class="sr-only">Settings</h2>
+
+          <!-- Group 1: Mode & Install -->
+          <button
+            id="mode-toggle"
+            class="r-btn r-btn--sm"
+            role="menuitemcheckbox"
+            aria-checked="false"
+            tabindex="-1"
+          >
+            Switch Mode
+          </button>
+
+          <button
+            id="install-app"
+            class="r-btn r-btn--sm btn-install"
+            role="menuitem"
+            aria-disabled="true"
+            tabindex="-1"
+          >
+            Install app
+            <span
+              id="install-status"
+              class="status-pill unavailable"
+              aria-live="polite"
+            >
+              Unavailable
+            </span>
+          </button>
+
+          <hr class="menu-sep" role="separator" aria-orientation="horizontal" />
+
+          <!-- Group 2: Data management -->
+          <button
+            id="export-proxy"
+            class="r-btn r-btn--sm"
+            role="menuitem"
+            tabindex="-1"
+          >
+            Backup data
+          </button>
+
+          <button
+            id="import-proxy"
+            class="r-btn r-btn--sm"
+            role="menuitem"
+            aria-controls="import-file"
+            tabindex="-1"
+          >
+            Import data
+          </button>
+          <input
+            id="import-file"
+            type="file"
+            accept="application/json"
+            hidden
+            aria-hidden="true"
+          />
+
+          <hr class="menu-sep" role="separator" aria-orientation="horizontal" />
+
+          <!-- Group 3: Resets -->
+          <button
+            id="prefs-reset"
+            class="r-btn r-btn--sm btn-reset"
+            role="menuitem"
+            tabindex="-1"
+          >
+            Reset Preferences
+          </button>
+
+          <button
+            id="reset-profile"
+            class="r-btn r-btn--sm"
+            role="menuitem"
+            tabindex="-1"
+          >
+            Reset Profile
+          </button>
+
+          <button
+            id="reset-data"
+            class="r-btn r-btn--sm"
+            role="menuitem"
+            tabindex="-1"
+          >
+            Reset Data
+          </button>
+
+          <button
+            id="clear-runtime-cache"
+            class="r-btn r-btn--sm"
+            role="menuitem"
+            tabindex="-1"
+          >
+            Clear Cache
+          </button>
+
+          <hr class="menu-sep" role="separator" aria-orientation="horizontal" />
+
+          <!-- Group 4: Maintenance -->
+          <button
+            id="check-updates"
+            class="r-btn r-btn--sm"
+            role="menuitem"
+            tabindex="-1"
+          >
+            Check Updates
+          </button>
+
+          <hr
+            class="menu-separator"
+            role="separator"
+            aria-orientation="horizontal"
+          />
+
+          <!-- Goal reminders -->
+          <button
+            id="goal-reminders"
+            class="r-btn r-btn--sm"
+            role="menuitemcheckbox"
+            aria-checked="false"
+            tabindex="-1"
+          >
+            Goal reminders: Off
+          </button>
+        </div>
+      </div>
+      <!-- Screen-reader-only help text, referenced by aria-describedby -->
+      <p id="menu-help" class="sr-only">
+        Use up and down arrows to navigate. Press Enter to activate, Escape to
+        close.
+      </p>
+    </header>
+
+    <!-- Add a Book -->
+    <section id="add-book">
+      <h2>Add a Book</h2>
+      <form id="book-form">
+        <label class="sr-only" for="title">Title</label>
+        <input type="text" id="title" placeholder="Title" required />
+
+        <label class="sr-only" for="author">Author</label>
+        <input
+          type="text"
+          id="author"
+          placeholder="Author"
+          required
+          list="author-options-add"
+        />
+        <datalist id="author-options-add"></datalist>
+
+        <label class="sr-only" for="series">Series</label>
+        <input
+          type="text"
+          id="series"
+          placeholder="Series (optional)"
+          list="series-options-add"
+        />
+        <datalist id="series-options-add"></datalist>
+
+        <label class="sr-only" for="seriesType">Series or Standalone</label>
+        <select id="seriesType" aria-label="Series or Standalone">
+          <option value="series">Part of a series</option>
+          <option value="standalone">Standalone</option>
+        </select>
+
+        <label class="sr-only" for="genre">Genre</label>
+        <input
+          type="text"
+          id="genre"
+          placeholder="Genre (optional)"
+          list="genre-options"
+        />
+        <datalist id="genre-options"></datalist>
+
+        <label class="sr-only" for="format">Format</label>
+        <select id="format" aria-label="Format">
+          <option value="">Format (choose)</option>
+          <option value="physical">Physical</option>
+          <option value="digital">Digital</option>
+        </select>
+
+        <!--Format subtype -->
+        <label class="sr-only" for="formatSubtype">Format subtype</label>
+        <select id="formatSubtype" aria-label="Format subtype (optional)">
+          <option value="">Subtype (optional)</option>
+          <!-- Physical -->
+          <option value="Hardcover" data-parent="physical">Hardcover</option>
+          <option value="Paperback" data-parent="physical">Paperback</option>
+          <!-- Digital -->
+          <option value="eBook" data-parent="digital">eBook</option>
+          <option value="Audiobook" data-parent="digital">Audiobook</option>
+          <option value="PDF" data-parent="digital">PDF</option>
+        </select>
+
+        <label class="sr-only" for="isbn">ISBN</label>
+        <input
+          type="text"
+          id="isbn"
+          inputmode="numeric"
+          aria-describedby="isbn-hint"
+          placeholder="ISBN (optional, 10 or 13 digits; dashes ok)"
+        />
+        <div
+          id="isbn-hint"
+          class="error-text"
+          aria-live="polite"
+          aria-atomic="true"
+          hidden
+        >
+          ISBN must be 10 or 13 digits; dashes/spaces allowed.
+        </div>
+
+        <label class="sr-only" for="status">Status</label>
+        <select id="status" aria-label="Status">
+          <option value="planned" selected>Planned</option>
+          <option value="reading">Reading</option>
+          <option value="finished">Finished</option>
+        </select>
+
+        <label class="sr-only" for="plannedMonth">Planned month (TBR)</label>
+        <input
+          type="month"
+          id="plannedMonth"
+          aria-label="Planned month (TBR)"
+        />
+
+        <button type="submit" class="r-btn r-btn--primary">Add Book</button>
+      </form>
+    </section>
+
+    <section id="controls">
+      <h2>Search & Filters</h2>
+      <div class="row">
+        <label class="sr-only" for="search">Search</label>
+        <div class="input-wrap">
+          <input
+            id="search"
+            type="search"
+            placeholder="Search title, author, series, genre, ISBN."
+          />
+          <button
+            id="clear-query"
+            type="button"
+            class="input-clear"
+            aria-label="Clear search"
+            title="Clear"
+          >
+            &times;
+          </button>
+        </div>
+        <button
+          id="search-btn"
+          type="button"
+          class="r-btn r-btn--primary r-btn--sm"
+          aria-label="Run search"
+          hidden
+          disabled
+        >
+          Search
+        </button>
+        <label class="sr-only" for="sort">Sort</label>
+        <select id="sort" aria-label="Sort">
+          <option value="createdAt:desc">Newest</option>
+          <option value="createdAt:asc">Oldest</option>
+          <option value="title:asc">Title A→Z</option>
+          <option value="title:desc">Title Z→A</option>
+          <option value="author:asc">Author A→Z</option>
+          <option value="author:desc">Author Z→A</option>
+          <option value="series:asc">Series A→Z</option>
+          <option value="series:desc">Series Z→A</option>
+        </select>
+      </div>
+
+      <div class="row">
+        <label class="filter" for="f-status"
+          >Status
+          <select id="f-status" multiple size="3">
+            <option value="planned">Planned</option>
+            <option value="reading">Reading</option>
+            <option value="finished">Finished</option>
+          </select>
+        </label>
+
+        <label class="filter" for="f-authors"
+          >Author
+          <select id="f-authors" multiple size="4"></select>
+        </label>
+
+        <label class="filter" for="f-genres"
+          >Genre
+          <select id="f-genres" multiple size="4"></select>
+        </label>
+
+        <label class="filter" for="f-series"
+          >Series
+          <select id="f-series" multiple size="4"></select>
+        </label>
+      </div>
+
+      <div class="row">
+        <button
+          id="clear-filters"
+          type="button"
+          class="r-btn r-btn--sm r-btn--ghost"
+        >
+          Clear Filters
+        </button>
+      </div>
+
+      <!-- Saved searches -->
+      <div class="row">
+        <button id="save-search" type="button" class="r-btn r-btn--primary">
+          Save current
+        </button>
+        <div
+          id="saved-searches"
+          class="saved-chips"
+          aria-label="Saved searches"
+        ></div>
+        <!-- Template for a saved-search chip trio (Apply · Rename · Delete) -->
+        <template id="saved-chip-template">
+          <span class="saved-chip-set">
+            <button class="chip" data-id title="Apply saved search"></button>
+            <button class="chip chip--ghost" data-edit title="Rename">
+              &#9998;
+            </button>
+            <button class="chip chip--ghost" data-del title="Delete">
+              &times;
+            </button>
+          </span>
+        </template>
+      </div>
+
+      <div class="row">
+        <div class="filter" id="tbr-filter">
+          <input id="tbr-only" type="checkbox" />
+          <span>Show only TBR for</span>
+          <label class="sr-only" for="tbr-month">TBR month</label>
+          <input id="tbr-month" type="month" />
+        </div>
+      </div>
+
+      <!-- Screen reader live status -->
+      <div id="search-status" aria-live="polite" class="visually-hidden"></div>
+
+      <!-- Empty query tip -->
+      <div id="books-empty-hint" class="muted" hidden>
+        Tip: use quotes for phrases, e.g. "lord of".
+      </div>
+    </section>
+
+    <section id="book-list">
+      <h2>Books</h2>
+      <!-- Bulk toolbar -->
+      <div id="bulk-toolbar" class="row" aria-label="Bulk edit toolbar">
+        <label class="check-all">
+          <input type="checkbox" id="check-all" aria-label="Select all books" />
+          <span class="muted">Select all</span>
+        </label>
+        <span
+          id="bulk-selected-count"
+          class="muted"
+          aria-live="polite"
+          aria-atomic="true"
+          >No books selected</span
+        >
+        <div class="spacer"></div>
+        <button
+          id="bulk-edit-btn"
+          class="r-btn r-btn--sm r-btn--ghost"
+          disabled
+          aria-disabled="true"
+          type="button"
+        >
+          Bulk Edit
+        </button>
+      </div>
+
+      <!-- Status button template -->
+      <template id="status-btn-temp">
+        <button class="r-btn r-btn--sm status-btn" type="button" data-action="">
+          <span class="status-label">Start Reading</span>
+        </button>
+      </template>
+      <ul id="books"></ul>
+      <div id="books-empty" class="muted" hidden>
+        No books yet — add your first one above.
+      </div>
+    </section>
+
+    <!-- Bulk Edit Dialog -->
+    <dialog
+      id="bulk-edit-dialog"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="bulk-title"
+      aria-describedby="bulk-desc"
+    >
+      <form method="dialog" id="bulk-form">
+        <h3 id="bulk-title">Bulk Edit</h3>
+        <p id="bulk-desc" class="muted">
+          Apply one change to all selected books.
+        </p>
+
+        <fieldset>
+          <legend class="sr-only">Bulk action</legend>
+          <label
+            ><input type="radio" name="bulkAction" value="status" checked />
+            Change status</label
+          >
+          <label
+            ><input type="radio" name="bulkAction" value="genre" /> Change
+            genre</label
+          >
+          <label
+            ><input type="radio" name="bulkAction" value="series" /> Change
+            series</label
+          >
+          <label
+            ><input type="radio" name="bulkAction" value="seriesType" /> Change
+            series type</label
+          >
+          <label
+            ><input type="radio" name="bulkAction" value="format" /> Change
+            format</label
+          >
+          <label
+            ><input type="radio" name="bulkAction" value="formatSubtype" />
+            Change format subtype</label
+          >
+          <label
+            ><input type="radio" name="bulkAction" value="author" /> Change
+            author</label
+          >
+        </fieldset>
+
+        <div id="bulk-status-wrap">
+          <label for="bulk-status">New status</label>
+          <select id="bulk-status">
+            <option value="planned">Planned</option>
+            <option value="reading">Reading</option>
+            <option value="finished">Finished</option>
+          </select>
+        </div>
+
+        <div id="bulk-genre-wrap" hidden>
+          <label for="bulk-genre">New genre</label>
+          <input
+            id="bulk-genre"
+            list="genre-options"
+            placeholder="e.g., Fantasy"
+          />
+        </div>
+
+        <div id="bulk-series-wrap" hidden>
+          <label for="bulk-series">New series</label>
+          <input
+            id="bulk-series"
+            list="series-options"
+            placeholder="e.g., The Expanse"
+          />
+          <datalist id="series-options"></datalist>
+        </div>
+
+        <div id="bulk-series-type-wrap" hidden>
+          <label for="bulk-series-type">New series type</label>
+          <input
+            id="bulk-series-type"
+            list="series-type-options"
+            placeholder="e.g., Standalone"
+          />
+          <datalist id="series-type-options"></datalist>
+        </div>
+
+        <div id="bulk-format-wrap" hidden>
+          <label for="bulk-format">New format</label>
+          <input
+            id="bulk-format"
+            list="format-options"
+            placeholder="e.g., Physical"
+          />
+          <datalist id="format-options"></datalist>
+        </div>
+
+        <div id="bulk-formatSubtype-wrap" hidden>
+          <label for="bulk-formatSubtype">New format subtype</label>
+          <input
+            id="bulk-formatSubtype"
+            list="format-subtype-options"
+            placeholder="eg., Hardcover, eBook"
+          />
+          <datalist id="format-subtype-options">
+            <option value="Hardcover"></option>
+            <option value="Paperback"></option>
+            <option value="eBook"></option>
+            <option value="Audiobook"></option>
+            <option value="PDF"></option>
+          </datalist>
+        </div>
+
+        <div id="bulk-author-wrap" hidden>
+          <label for="bulk-author">New author</label>
+          <input
+            id="bulk-author"
+            list="author-options"
+            placeholder="e.g., Arthur C. Clarke"
+          />
+          <datalist id="author-options"></datalist>
+          <p class="muted" id="author-tip">
+            Tip: Only bulk-change author if these books truly share the same
+            author.
+          </p>
+        </div>
+
+        <div class="dialog__actions">
+          <button
+            id="bulk-cancel"
+            type="button"
+            value="cancel"
+            class="r-btn r-btn--ghost"
+          >
+            Cancel
+          </button>
+          <button id="bulk-apply" type="submit" class="r-btn r-btn--primary">
+            Apply to selected
+          </button>
+        </div>
+      </form>
+    </dialog>
+
+    <section id="goal-widget">
+      <h2 id="goal-title">Daily Goal</h2>
+      <div class="row" role="group" aria-labelledby="goal-title">
+        <label
+          >Type
+          <select id="goal-type">
+            <option value="pages">Pages</option>
+            <option value="minutes">Minutes</option>
+          </select>
+        </label>
+
+        <label
+          >Value
+          <div class="nudge-group">
+            <button
+              id="goal-dec"
+              type="button"
+              aria-label="Decrease daily goal"
+            >
+              -
+            </button>
+            <input
+              id="goal-value"
+              type="number"
+              min="1"
+              placeholder="e.g., 20"
+              inputmode="numeric"
+              required
+              aria-required="true"
+            />
+            <button
+              id="goal-inc"
+              type="button"
+              aria-label="Increase daily goal"
+            >
+              +
+            </button>
+          </div>
+        </label>
+
+        <button id="save-goal" type="button" class="r-btn r-btn--primary">
+          Save Goal
+        </button>
+        <button
+          id="quick-toggle-metric"
+          type="button"
+          class="r-btn r-btn--ghost"
+          aria-pressed="false"
+          title="Quick toggle between Pages/Minutes"
+        >
+          Toggle Metric
+        </button>
+      </div>
+
+      <div id="today-progress">
+        <div
+          id="today-bar"
+          role="progressbar"
+          aria-describedby="today-tooltip"
+          aria-label="Daily reading progress"
+          aria-valuemin="0"
+          aria-valuenow="0"
+          aria-valuemax="0"
+          tabindex="0"
+          class="has-tooltip"
+        >
+          <span id="today-bar-fill"></span>
+          <div
+            id="today-tooltip"
+            role="tooltip"
+            aria-live="polite"
+            aria-hidden="true"
+          ></div>
+        </div>
+        <div id="today-stats">
+          <strong id="today-amount">0</strong>
+          <span id="today-unit">pages</span>
+          /
+          <span id="today-goal">0</span>
+          <span id="today-pct" aria-hidden="true" style="margin-left: 0.5rem"
+            >(0%)</span
+          >
+          <span id="today-met" aria-live="polite"></span>
+        </div>
+        <div id="today-remaining" class="muted" aria-live="polite">0 to go</div>
+      </div>
+
+      <!-- Period Summaries -->
+      <div
+        id="period-summaries"
+        class="row"
+        aria-live="polite"
+        aria-atomic="true"
+      >
+        <div>
+          This week: <strong id="sum-week-pages">0</strong> pages ·
+          <strong id="sum-week-mins">0</strong> mins
+        </div>
+        <div>
+          This month: <strong id="sum-month-pages">0</strong> pages ·
+          <strong id="sum-month-mins">0</strong> mins
+        </div>
+      </div>
+      <div id="streaks">
+        <div>Current streak: <strong id="streak-current">0</strong> days</div>
+        <div>Max streak: <strong id="streak-max">0</strong> days</div>
+      </div>
+    </section>
+
+    <section id="book-goals">
+      <h2>Book Goals</h2>
+      <div class="row" role="group" aria-labelledby="book-goals">
+        <label
+          >Monthly target
+          <input
+            id="goal-monthly-books"
+            type="number"
+            min="0"
+            placeholder="e.g., 2"
+          />
+        </label>
+        <label>
+          Yearly target
+          <input
+            id="goal-yearly-books"
+            type="number"
+            min="0"
+            placeholder="e.g., 20"
+          />
+        </label>
+        <button id="save-book-goals" type="button" class="r-btn r-btn--primary">
+          Save Book Goals
+        </button>
+      </div>
+
+      <div class="row" id="book-goals-stats">
+        <div>
+          This month: <strong id="books-finished-month">0</strong> /
+          <span id="books-goal-month">0</span>
+        </div>
+        <div>
+          This year: <strong id="books-finished-year">0</strong> /
+          <span id="books-goal-year">0</span>
+        </div>
+      </div>
+
+      <details id="past-goals">
+        <summary>Past Goals</summary>
+        <ul id="past-goals-list" class="past-goals-list"></ul>
+      </details>
+    </section>
+
+    <!-- Reading Log -->
+    <section id="reading-log">
+      <h2>Add Reading Session</h2>
+      <form id="log-form">
+        <label class="sr-only" for="log-book">Book</label>
+        <select id="log-book" required></select>
+
+        <label class="sr-only" for="log-pages">Pages read</label>
+        <input id="log-pages" type="number" min="0" placeholder="Pages read" />
+
+        <label class="sr-only" for="log-mins">Minutes</label>
+        <input id="log-mins" type="number" min="0" placeholder="Minutes" />
+
+        <label class="sr-only" for="log-date">Date</label>
+        <input id="log-date" type="date" />
+        <button type="submit" class="r-btn r-btn--primary">Add Session</button>
+      </form>
+    </section>
+
+    <section id="Session-history">
+      <h2>Session History</h2>
+
+      <!-- Screen-reader announcement area for Session History -->
+      <div
+        id="history-status"
+        class="sr-only"
+        aria-live="polite"
+        aria-atomic="true"
+      ></div>
+
+      <div class="row">
+        <label class="filter" for="history-book"
+          >Book
+          <select id="history-book">
+            <option value="">All books</option>
+          </select>
+        </label>
+
+        <label class="filter" for="history-type"
+          >Type
+          <select id="history-type">
+            <option value="">Any</option>
+            <option value="pages">Pages</option>
+            <option value="minutes">Minutes</option>
+          </select>
+        </label>
+
+        <label class="filter" for="history-date"
+          >Date
+          <input id="history-date" type="date" />
+        </label>
+
+        <button id="history-clear" type="button" class="r-btn r-btn--ghost">
+          Clear
+        </button>
+      </div>
+
+      <div class="table-wrap">
+        <table class="table" aria-describedby="history-help">
+          <thead>
+            <tr>
+              <th>Date</th>
+              <th>Book</th>
+              <th>Pages</th>
+              <th>Minutes</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody id="history-body"></tbody>
+        </table>
+      </div>
+
+      <p id="history-help" class="sr-only">
+        Use the filters to narrow results. Edit a row inline and press Save, or
+        Undo from the toast to revert.
+      </p>
+
+      <div class="row" id="history-pager">
+        <button
+          id="history-prev"
+          type="button"
+          class="r-btn r-btn--ghost"
+          aria-label="Previous page"
+        >
+          Prev
+        </button>
+        <span id="history-page" class="muted"></span>
+        <button
+          id="history-next"
+          type="button"
+          class="r-btn r-btn--ghost"
+          aria-label="Next page"
+        >
+          Next
+        </button>
+      </div>
+    </section>
+
+    <!--- App toasts -->
+    <div id="toasts" aria-live="polite" aria-atomic="true"></div>
+
+    <!-- Screen-readr-only goal updates -->
+    <div
+      id="sr-goal-updates"
+      class="sr-only"
+      aria-live="polite"
+      aria-atomic="true"
+    ></div>
+
+    <script type="module" src="./app.js"></script>
+    <script type="module" src="./dev/smoke.js"></script>
+  </body>
 </html>

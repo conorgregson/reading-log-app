@@ -1,5 +1,5 @@
 /*
-  Readr v1.5.0
+  Readr v1.7.0
 */
 
 import * as Books from "./features/books.js";
@@ -10,7 +10,11 @@ import { smartSearch, tokenize, highlightText } from "./utils/search.js";
 import { wireImportExport } from "./ui/wire-import-export.js";
 import { normalizeStatus } from "./utils/constants.js";
 import { initTooltip } from "./features/tooltip.js";
-import { initProfile, renderProfileUI, updateBookGoalsUI } from "./features/profile.js";
+import {
+  initProfile,
+  renderProfileUI,
+  updateBookGoalsUI,
+} from "./features/profile.js";
 
 const searchUI = attachSearchUI({
   render: () => Books.render(),
@@ -25,38 +29,44 @@ window.searchUI = searchUI;
 
 async function init() {
   // Load core state (books, logs, profile, etc.)
-  loadBooks();      
+  loadBooks();
   loadLogs();
   loadProfile();
 
   // normalize legacy statuses before first render
   migrateStatusesToReading(books, saveBooks);
 
-  buildBookOptions();       // to populate the log form
+  buildBookOptions(); // to populate the log form
 
   // Hand Books everything it needs (data + helpers) in a narrow adapter
   const adapters = {
-    get books() { return books; },
+    get books() {
+      return books;
+    },
     saveBooks,
     buildBookOptions,
     buildFilterOptions,
     updateBookGoalsUI,
     withUndo,
-    smartSearch, tokenize, highlightText
+    smartSearch,
+    tokenize,
+    highlightText,
   };
 
   await Books.init({ adapters, ui: searchUI });
   Sessions.init({
     adapters: {
-      get logs() { return logs; },
+      get logs() {
+        return logs;
+      },
       saveLogs,
       getBookTitleById,
       dayKey,
       withUndo,
       showToast,
-      renderProfileUI,     // so sessions can update the goals widget
-      renderBooks: Books.render
-    }
+      renderProfileUI, // so sessions can update the goals widget
+      renderBooks: Books.render,
+    },
   });
 
   initSettings({
@@ -79,7 +89,11 @@ async function init() {
       resetProfile: () => {
         localStorage.removeItem(PROFILE_KEY);
         localStorage.removeItem("themeMode");
-        profile = { id: "me", dailyGoal: null, bookGoals: { monthly: 0, yearly: 0 } };
+        profile = {
+          id: "me",
+          dailyGoal: null,
+          bookGoals: { monthly: 0, yearly: 0 },
+        };
         themeMode = "system";
         applyAppearance(themeMode);
         saveProfile();
@@ -96,22 +110,31 @@ async function init() {
         buildBookOptions();
         Books.render();
         renderProfileUI();
-      }
-    }
+      },
+    },
   });
 
   initProfile({
     adapters: {
-      get books() { return books; },
-      get logs() { return logs; },
-      get profile() { return profile; },
+      get books() {
+        return books;
+      },
+      get logs() {
+        return logs;
+      },
+      get profile() {
+        return profile;
+      },
       dayKey,
-    }
+    },
   });
 
   initTooltip({
-    adapters: { logs, getBookTitleById, dayKey }
+    adapters: { logs, getBookTitleById, dayKey },
   });
+
+  // Goal reminders (settings + scheduler + ARIA live)
+  initGoalRemindersUI();
 
   // Expose minimal hooks for a11y smoke
   window.render = Books.render;
@@ -119,13 +142,13 @@ async function init() {
   window.saveBooks = saveBooks;
 }
 
-
 // ------------------------
 // Storage Keys
 // ------------------------
 const BOOKS_KEY = "readinglog.v1";
 const LOGS_KEY = "readinglog.logs.v1";
 const PROFILE_KEY = "readinglog.profile.v1";
+const GOAL_REMINDERS_KEY = "readinglog.goal-reminders.v1";
 
 // ------------------------
 // App State
@@ -133,16 +156,21 @@ const PROFILE_KEY = "readinglog.profile.v1";
 let books = [];
 let logs = [];
 let profile = {
-  id: "me", 
+  id: "me",
   dailyGoal: null,
-  bookGoals: { monthly: 0, yearly: 0 }
+  bookGoals: { monthly: 0, yearly: 0 },
 };
+
+// Goal reminders: "off" | "daily" | "weekly"
+let goalReminderMode = localStorage.getItem(GOAL_REMINDERS_KEY) || "off";
+let goalReminderTimeoutId = null;
 
 // -----------------------
 // Theme (light/dark/system with live OS sync)
 // -----------------------
 const body = document.body;
-const media = window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)");
+const media =
+  window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)");
 if (media && !media.addEventListener && media.addListener) {
   media.addListener(() => {
     if (themeMode === "system") {
@@ -164,16 +192,21 @@ function applyAppearance(mode) {
   const effective = getEffectiveMode(mode);
   body.classList.remove("mode-light", "mode-dark");
   body.classList.add(effective === "dark" ? "mode-dark" : "mode-light");
-  
+
   const modeBtnLocal = document.getElementById("mode-toggle");
   if (modeBtnLocal) {
     // Show what you'll switch to
     const next = nextThemeMode(themeMode);
-    modeBtnLocal.textContent = 
-      next === "light" ? "Switch to Light"
-      : next === "dark" ?  "Switch to Dark"
-      : "Switch to System";
-      modeBtnLocal.setAttribute("aria-label", `Theme: ${themeMode} (click to change)`);
+    modeBtnLocal.textContent =
+      next === "light"
+        ? "Switch to Light"
+        : next === "dark"
+        ? "Switch to Dark"
+        : "Switch to System";
+    modeBtnLocal.setAttribute(
+      "aria-label",
+      `Theme: ${themeMode} (click to change)`
+    );
   }
 }
 function nextThemeMode(current) {
@@ -209,7 +242,8 @@ if (bookForm) {
     const author = document.getElementById("author").value.trim();
     const genre = document.getElementById("genre")?.value.trim() || "";
     const status = document.getElementById("status").value;
-    const plannedMonth = document.getElementById("plannedMonth")?.value || undefined;
+    const plannedMonth =
+      document.getElementById("plannedMonth")?.value || undefined;
     if (!title || !author) {
       return;
     }
@@ -217,20 +251,20 @@ if (bookForm) {
     const now = new Date().toISOString();
     books.push({
       id: Date.now(),
-      title, 
+      title,
       author,
-      genre, 
+      genre,
       status,
-      plannedMonth,    
-      createdAt: now, 
+      plannedMonth,
+      createdAt: now,
       updatedAt: now,
-      ...(status === "finished" ? { finishedAt: now } : {})
+      ...(status === "finished" ? { finishedAt: now } : {}),
     });
     saveBooks();
-    buildBookOptions();    // keep log form in sync
+    buildBookOptions(); // keep log form in sync
     Books.render();
     e.target.reset();
-  }); 
+  });
 }
 
 // Handle "Add Session"
@@ -252,7 +286,7 @@ if (logForm) {
       bookId,
       date, // "YYYY-MM-DD"
       pagesRead: pages ? +pages : undefined,
-      minutes: mins ? +mins : undefined
+      minutes: mins ? +mins : undefined,
     });
     saveLogs();
 
@@ -286,7 +320,7 @@ if (saveGoalBtn) {
     const type = document.getElementById("goal-type").value;
     const input = document.getElementById("goal-value");
     const raw = +input.value;
-    let err = document.getElementById("goal-error")
+    let err = document.getElementById("goal-error");
 
     if (!err) {
       err = document.createElement("div");
@@ -307,6 +341,8 @@ if (saveGoalBtn) {
     profile.dailyGoal = { type, value };
     saveProfile();
     renderProfileUI();
+    const unit = type === "minutes" ? "minutes" : "pages";
+    announceGoalUpdate(`Daily goal set to ${value} ${unit} per day.`);
   });
 }
 
@@ -318,25 +354,39 @@ if (decBtn || incBtn) {
   const setGoalValue = (next) => {
     if (!profile.dailyGoal) {
       const typeSel = document.getElementById("goal-type");
-      profile.dailyGoal = { type: typeSel?.value === "minutes" ? "minutes" : "pages", value: 20 };
+      profile.dailyGoal = {
+        type: typeSel?.value === "minutes" ? "minutes" : "pages",
+        value: 20,
+      };
     }
     profile.dailyGoal.value = coerce(next);
     input.value = String(profile.dailyGoal.value);
     saveProfile();
     renderProfileUI();
   };
-  decBtn?.addEventListener("click", () => setGoalValue((profile?.dailyGoal?.value || input.value || 1) - 1));
-  incBtn?.addEventListener("click", () => setGoalValue((profile?.dailyGoal?.value || input.value || 1) + 1));
+  decBtn?.addEventListener("click", () =>
+    setGoalValue((profile?.dailyGoal?.value || input.value || 1) - 1)
+  );
+  incBtn?.addEventListener("click", () =>
+    setGoalValue((profile?.dailyGoal?.value || input.value || 1) + 1)
+  );
 }
 
 const saveBookGoalsBtn = document.getElementById("save-book-goals");
 if (saveBookGoalsBtn) {
   saveBookGoalsBtn.addEventListener("click", () => {
-    const m = Math.max(0, +document.getElementById("goal-monthly-books").value || 0);
-    const y = Math.max(0, +document.getElementById("goal-yearly-books").value || 0);
+    const m = Math.max(
+      0,
+      +document.getElementById("goal-monthly-books").value || 0
+    );
+    const y = Math.max(
+      0,
+      +document.getElementById("goal-yearly-books").value || 0
+    );
     profile.bookGoals = { monthly: m, yearly: y };
     saveProfile();
     renderProfileUI();
+    announceGoalUpdate(`Book goals updated: ${m} this month, ${y} this year.`);
   });
 }
 
@@ -359,7 +409,10 @@ if (quickToggle) {
     }
 
     // Update aria-pressed state for the toggle
-    quickToggle.setAttribute("aria-pressed", next === "minutes" ? "true" : "false");
+    quickToggle.setAttribute(
+      "aria-pressed",
+      next === "minutes" ? "true" : "false"
+    );
 
     renderProfileUI();
   });
@@ -371,8 +424,6 @@ function getBookTitleById(id) {
   return book ? book.title : "Unknown book";
 }
 
-
-
 // -----------------------
 // Aria sync
 // -----------------------
@@ -380,9 +431,10 @@ function setThemeAriaState() {
   const btn = document.getElementById("mode-toggle");
   if (!btn) return;
   // Consider "checked" when the effective theme is dark
-  const isDark = (typeof getEffectiveMode === "function")
-    ? getEffectiveMode(themeMode) === "dark"
-    : document.body.classList.contains("mode-dark");
+  const isDark =
+    typeof getEffectiveMode === "function"
+      ? getEffectiveMode(themeMode) === "dark"
+      : document.body.classList.contains("mode-dark");
   btn.setAttribute("aria-checked", String(isDark));
 }
 
@@ -430,16 +482,151 @@ function withUndo({ label = "Action", apply, revert, details = [] }) {
 }
 
 // -----------------------
+// Goal reminders + ARIA live helper
+// -----------------------
+function announceGoalUpdate(message) {
+  const region = document.getElementById("sr-goal-updates");
+  if (region) {
+    region.textContent = message || "";
+  }
+}
+
+function nextReminderMode(current) {
+  return (current = "off" ? "daily" : current === "daily" ? "weekly" : "off");
+}
+
+function initGoalRemindersUI() {
+  const btn = document.getElementById("goal-reminders");
+  if (!btn) {
+    scheduleGoalReminder();
+    return;
+  }
+
+  // Normalize stored value
+  if (!["off", "daily", "weekly"].includes(goalReminderMode)) {
+    goalReminderMode = "off";
+  }
+
+  const syncButton = () => {
+    let label;
+    if (goalReminderMode === "daily") {
+      label = "Goal reminders: Daily";
+    } else if (goalReminderMode === "weekly") {
+      label = "Goal reminders: Weekly";
+    } else {
+      label = "Goal reminders: Off";
+    }
+    btn.textContent = label;
+    btn.setAttribute(
+      "aria-checked",
+      goalReminderMode === "off" ? "false" : "true"
+    );
+  };
+
+  syncButton();
+  scheduleGoalReminder();
+
+  btn.addEventListener("click", async () => {
+    goalReminderMode = nextReminderMode(goalReminderMode);
+    localStorage.setItem(GOAL_REMINDERS_KEY, goalReminderMode);
+    syncButton();
+    scheduleGoalReminder();
+
+    const message =
+      goalReminderMode === "off"
+        ? "Goal reminders turned off."
+        : `Goal reminders set to ${goalReminderMode}.`;
+    announceGoalUpdate(message);
+
+    // Request browser notification permission on opt-in
+    if (
+      goalReminderMode !== "off" &&
+      "Notification" in window &&
+      Notification.permission === "default"
+    ) {
+      try {
+        const permission = await Notification.requestPermission();
+        if (permission !== "granted") {
+          showToast(
+            "Browser notifications are blocked. You'll still see in-app reminders.",
+            "warning",
+            { timeout: 5000 }
+          );
+        }
+      } catch {
+        /* ignore */
+      }
+    }
+  });
+}
+
+function scheduleGoalReminder() {
+  if (goalReminderTimeoutId) {
+    clearTimeout(goalReminderTimeoutId);
+    goalReminderTimeoutId = null;
+  }
+  if (goalReminderMode === "off") return;
+
+  const now = new Date();
+  const target = new Date(now);
+  target.setSeconds(0, 0);
+
+  if (goalReminderMode === "daily") {
+    // Next 8pm local
+    target.setHours(20, 0, 0, 0);
+    if (target <= now) target.setDate(target.getDate() + 1);
+  } else if (goalReminderMode === "weekly") {
+    // Next Sunday 8pm local
+    const day = target.getDay(); // 0 = Sunday...6 = Saturday
+    const daysToNextSunday = (7 - day) & 7 || 7;
+    target.setDate(target.getDate() + daysToNextSunday);
+    target.setHours(20, 0, 0, 0);
+  }
+
+  const delay = Math.max(5000, target - now); // safeguard: at least 5s
+  goalReminderTimeoutId = setTimeout(() => {
+    fireGoalReminder();
+    scheduleGoalReminder();
+  }, delay);
+}
+
+function fireGoalReminder() {
+  const message = "Time to check your reading goals for today.";
+
+  if ("Notification" in window && Notification.permission === "granted") {
+    try {
+      new Notification("Readr — Goal reminder", {
+        body: message,
+        tag: "readr-goal-reminder",
+      });
+    } catch {
+      // fall back to toast + SR
+      showToast(message, "info", { timeout: 8000 });
+    }
+  } else {
+    showToast(message, "info", { timeout: 8000 });
+  }
+
+  announceGoalUpdate(message);
+}
+
+// -----------------------
 // Toasts
 // -----------------------
-function showToast(message, type = "info", { actions = [], details = [], timeout = 3000 } = {}) {
+function showToast(
+  message,
+  type = "info",
+  { actions = [], details = [], timeout = 3000 } = {}
+) {
   const host = document.getElementById("toasts");
   if (!host) return;
 
   const el = document.createElement("div");
-  el.className = `toast ${/^(info|success|error|warning)$/.test(type) ? type : "info"} enter`;
+  el.className = `toast ${
+    /^(info|success|error|warning)$/.test(type) ? type : "info"
+  } enter`;
   el.setAttribute("role", "status");
-  
+
   const msg = document.createElement("span");
   msg.textContent = String(message);
 
@@ -453,7 +640,7 @@ function showToast(message, type = "info", { actions = [], details = [], timeout
     details.forEach((line, i) => {
       if (i) {
         small.appendChild(document.createElement("br"));
-      };
+      }
       small.appendChild(document.createTextNode(String(line)));
     });
     el.appendChild(small);
@@ -466,7 +653,14 @@ function showToast(message, type = "info", { actions = [], details = [], timeout
     b.type = "button";
     b.className = className;
     b.textContent = label;
-    b.addEventListener("click", () => { onClick?.(); dismiss(0); }, { once: true});
+    b.addEventListener(
+      "click",
+      () => {
+        onClick?.();
+        dismiss(0);
+      },
+      { once: true }
+    );
     actionsBox.appendChild(b);
   });
 
@@ -546,7 +740,11 @@ function saveProfile() {
 // Data Helpers
 // -----------------------
 function dayKey(date = new Date()) {
-  const dayStart = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+  const dayStart = new Date(
+    date.getFullYear(),
+    date.getMonth(),
+    date.getDate()
+  );
   return dayStart.toISOString().slice(0, 10); // YYYY-MM-DD
 }
 function monthKey(date = new Date()) {
@@ -580,7 +778,6 @@ init();
   try {
     const reg = await navigator.serviceWorker.register("./sw.js");
 
-
     function promptUpdate() {
       // persistent toast with actions (no auto-timeout)
       showToast("Update available", "info", {
@@ -589,14 +786,14 @@ init();
             label: "Refresh",
             // Ask the waiting SW to skip waiting
             onClick: () => reg.waiting?.postMessage({ type: "SKIP_WAITING" }),
-            className: "btn btn-sm"
+            className: "btn btn-sm",
           },
           {
             label: "Dismiss",
-            onClick: () => {}
-          }
+            onClick: () => {},
+          },
         ],
-        timeout: 0
+        timeout: 0,
       });
     }
 
@@ -624,14 +821,24 @@ init();
       window.location.reload();
     });
   } catch (err) {
-    showToast("Service Worker registration failed.", "error", { timeout: 5000 });
+    showToast("Service Worker registration failed.", "error", {
+      timeout: 5000,
+    });
   }
 })();
 
 // dev-only test hook (safe: only active on localhost)
-if (typeof window !== "undefined" && (location.hostname === "127.0.0.1" || location.hostname === "localhost")) {
+if (
+  typeof window !== "undefined" &&
+  (location.hostname === "127.0.0.1" || location.hostname === "localhost")
+) {
   window.__test = Object.assign(window.__test || {}, {
     withUndo,
     showToast,
   });
+}
+
+// Allow other modules (e.g., sessions/profile) to announce goal updates
+if (typeof window !== "undefined") {
+  window.announceGoalUpdate = announceGoalUpdate;
 }
