@@ -4,6 +4,55 @@ All notable changes to **Readr** (reading log app) will be documented in this fi
 
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/), and we aim to follow [Semantic Versioning](https://semver.org/).
 
+## [v1.8.0] — Sessions & Backups (2025-12-05)
+
+### Added
+
+- Add sessions-only backup export for reading history.
+- Add sessions-only import with validation, normalization, and merge logic.
+- Add memoized session history rendering for faster search, filters, and pagination.
+- Add inline editing for session pages, minutes, and notes, including blur-to-save and Cmd/Ctrl+Enter commit.
+- Add inline Delete button for sessions with full Undo support.
+- Add inline textarea for notes in Session History with automatic resizing.
+- Add visible dark-mode styling for Undo buttons in toasts.
+- Add full-library backup export including `profile`, `books`, and `sessions`.
+- Add inline Backup Details tooltip in Settings with:
+  - Explanation of full vs. sessions-only backups
+  - “Last full backup” date and relative time
+  - Library metadata (book count, session count)
+  - Filename preview
+  - “Backup Now” action button
+- Add richer import/export toasts for full backups and sessions-only backups.
+
+### Changed
+
+- Optimize session history rendering to reuse sorted logs and patch table rows incrementally.
+- Refactor Session History rows to use spreadsheet-style controls (number inputs, textareas, consistent row-action layout).
+- Improve session search behavior via shared highlightText / tokenize utilities.
+- Refine streak and summary calculations using normalized minutes/pages fields (legacy and modern logs unified).
+- Lighten Session History hover background for improved button contrast in light mode.
+- Improve Edit button styling and hover transitions to match the Books section.
+- Reset Data now fully clears session rows, summaries, goals, streaks, and re-renders correctly.
+- Memoization now invalidates safely across multiple new sessions to avoid stale tables.
+- Normalize all session log shapes (`type/value`, `pagesRead/minutes`, `pages/mins`) into a canonical format.
+- Enhance full backup export/import flows with schemaVersion metadata, uniform timestamps, and structured validation.
+
+### Removed
+
+- Remove unused legacy session-highlighting helpers; replaced by shared search utilities.
+- Remove prompt-based notes editor and legacy `handleEditClick`.
+- Remove redundant DOM reads and row-wide innerHTML rewrites in Session History.
+
+### Notes
+
+- Full backups now include profile, books, and sessions and remain compatible with older backups through migration.
+- Sessions-only backups safely append reading history without affecting books or profile goals.
+- Session History now behaves like a compact spreadsheet editor with Undo support.
+- New Backup Details tooltip provides immediate clarity on what gets backed up and when.
+- Import validation now produces a single toast message with optional structured details (no duplicate error lines).
+
+---
+
 ## [v1.7.0] — Goals & Layout Polish (2025-11-28)
 
 ### Added

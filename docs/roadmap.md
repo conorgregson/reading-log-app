@@ -149,9 +149,8 @@ Released: Oct 2025
 
 ### ✅ Version 1.7 — Goals & Layout Polish
 
-[x] Extra spacing between daily goal inputs and progress bar
-
-- _AC:_ Inputs and progress bar visually separated for clarity.
+- [x] Extra spacing between daily goal inputs and progress bar
+  - _AC:_ Inputs and progress bar visually separated for clarity.
 - [x] Better layout for book goals (monthly/yearly targets grouped visually)
   - _AC:_ Monthly and yearly goal inputs clearly grouped with save button.
 - [x] Browse **past goals** from previous months/years
@@ -166,34 +165,45 @@ Released: Nov 2025
 
 ---
 
-### 📖 Version 1.8 — Sessions & History
+### ✅ Version 1.8 — Sessions & History
 
-- [ ] Search across past reading sessions
-  - _AC:_ Sessions view supports keyword/date search.
-- [ ] Filter sessions by book or date range
-  - _AC:_ Sessions can be narrowed by book title or date range.
-- [ ] Accessibility upgrades for history table (ARIA labels, keyboard support)
-  - _AC:_ History table fully navigable by screen reader and keyboard.
-- [ ] Session import/export improvements
-  - _AC:_ Sessions included in JSON backups; import gracefully handles missing fields.
-- [ ] Quick-add session shortcut
-  - _AC:_ User can log a session with fewer clicks via “+ Session” button in toolbar.
+- [x] Add search highlighting to book titles and notes
+  - _AC:_ Highlight matching tokens and preserve styling through filters.
+- [x] Improve Session History keyboard navigation
+  - _AC:_ ArrowUp/Down, Home/End cycle rows with proper focus and live-region updates.
+- [x] Add truncation + tooltip for long notes
+  - _AC:_ Ellipsis on overflow; tooltip on hover; full text visible on row edit.
+- [x] Add small A11y improvements to session table
+  - _AC:_ Live region updates for row selection, filter changes, and empty states.
+- [x] Optimize Session History rendering
+  - _AC:_ Memoize sorted logs; precompute date keys; patch rows incrementally.
+- [x] Add Session import/export support
+  - _AC:_ Sessions included in full backups; sessions-only export/import; safe merge & dedupe.
 
-Planned Q4 2025
+Released: Dec 2025
 
 ---
 
 ### 🎨 Version 1.9 — Visualization & Motivation
 
-- [ ] Basic charts (per-book progress, per-day trend)
-  - _AC:_ User can view charts generated from session data.
-- [ ] Badges for hitting goals (gamification light)
-  - _AC:_ App awards visible badges for milestone completions.
+- [ ] Basic charts (per-book progress, per-day trends)
+  - _AC_: User can view charts generated from session data; includes per-book progress + per-day/weekly trend; charts update automatically when sessions change; supports light/dark mode.
+- [ ] Badges for hitting goals (light gamification)
+  - _AC_: App awards visible badges for milestones (first streaks, books finished, pages/minutes logged); badges appear in a new Profile → Badges view; includes toast on unlock.
 - [ ] Keyboard shortcuts for quick session logging
-  - _AC:_ User can press shortcut keys to add sessions without using mouse.
+  - _AC_: User can open New Session with a shortcut (e.g., `N`), navigate Session History rows with arrows + Enter, and toggle shortcuts in Settings for accessibility.
 - [ ] Shareable progress snapshot
-  - _AC:_ Export/share an image of current stats (books read, streaks).
-- [ ] A11y: badges and charts have alternative text summaries
+  - _AC_: User can export/share an image containing reading streak, book progress, and earned badges; snapshot uses a branded layout and works in PWA and browser.
+- [ ] A11y: charts + badges readable without visuals
+  - _AC_: Charts include alt-text summaries (“Reading increased 15% week-over-week”); badges have ARIA labels; shareable snapshot generates a text-based equivalent.
+- [ ] Chart themes (optional aesthetic/accent modes)
+  - _AC_: User can toggle light, dark, and monochrome chart themes; themes persist and respect system settings.
+- [ ] Trend ranges (weekly, monthly, yearly)
+  - _AC_: User can switch between time ranges; app calculates percent change (e.g., “27% more reading this week”).
+- [ ] Stats layer / analytics module
+  - _AC_: Centralize all reading metrics into an analytics module (pages, minutes, streaks, trends); charts read from this layer; memoization improves performance on large libraries.
+- [ ] Cleanup & structure: charts + badges modules
+  - _AC_: Add `features/charts.js`, `features/badges.js`, and reusable `<chart-container>` UI; remove old streak logic replaced by analytics layer.
 
 Planned Q4 2025
 

@@ -1,11 +1,12 @@
 // Owns: "Today's entries" tooltip (render + positioning + events).
 // Decoupled via adapters so app state stays outside.
 
+import { loadData } from "../utils/storage.js";
+
 let A = null;
 
 export function initTooltip({ adapters }) {
   A = adapters;
-  attachTooltipEvents();
 }
 
 export function renderTodayTooltip() {
@@ -53,11 +54,14 @@ function getTodayEntries() {
     .filter((x) => sameDayKey(x.date) === today)
     .map((x) => {
       const parts = [];
-      const p = Number(x.pagesRead);
-      const m = Number(x.minutes);
-      if (Number.isFinite(p) && p > 0) parts.push(`${p} pages`);
-      if (Number.isFinite(m) && m > 0) parts.push(`${m} min`);
-      return { title: A.getBookTitleById(x.bookId), what: parts.length ? parts.join(" • ") : "—" };
+      const pages = Number(x.pagesRead);
+      const minutes = Number(x.minutes);
+      if (Number.isFinite(pages) && pages > 0) parts.push(`${pages} pages`);
+      if (Number.isFinite(minutes) && minutes > 0) parts.push(`${minutes} min`);
+      return {
+        title: A.getBookTitleById(x.bookId),
+        what: parts.length ? parts.join(" • ") : "—",
+      };
     });
 }
 
@@ -70,77 +74,130 @@ function sameDayKey(s) {
   return A.dayKey(new Date(s));
 }
 
-function attachTooltipEvents() {
-  const bar = document.getElementById("today-bar");
-  const tip = document.getElementById("today-tooltip");
-  if (!bar || !tip) return;
+// ---------------------------------------------------------------------------
+// Backup details tooltip (Settings)
+// ---------------------------------------------------------------------------
 
-  let hideTimer = null;
-  let relayoutBound = null;
+export function initBackupTooltip() {
+  const trigger = document.getElementById("backup-help");
+  const tip = document.getElementById("backup-tooltip");
+  if (!trigger || !tip) return;
 
-  const positionTooltip = () => {
-    const barRect = bar.getBoundingClientRect();
-    const tipRect = tip.getBoundingClientRect();
-    const gap = 0;
-    const spaceAbove = barRect.top;
-    const spaceBelow = window.innerHeight - barRect.bottom;
+  let isOpen = false;
 
-    if (spaceBelow >= tipRect.height + gap) {
-      tip.style.top = `${Math.round(barRect.bottom + gap)}px`;
-      tip.classList.add("pos-below");
-    } else if (spaceAbove >= tipRect.height + gap) {
-      tip.style.top = `${Math.round(barRect.top - tipRect.height - gap)}px`;
-      tip.classList.remove("pos-below");
-    } else {
-        // pick the larger side and position accordingly
-        if (spaceAbove >= spaceBelow) {
-            tip.style.top = `${Math.round(barRect.top - tipRect.height - gap)}px`;
-            tip.classList.remove("pos-below");
-        } else {
-            tip.style.top = `${Math.round(barRect.bottom + gap)}px`;
-            tip.classList.add("pos-below");
+  function formatRelative(date) {
+    const now = new Date();
+    const diffMs = now.getTime() - date.getTime();
+    const dayMs = 1000 * 60 * 60 * 24;
+    const days = Math.floor(diffMs / dayMs);
+
+    if (days <= 0) return "today";
+    if (days === 1) return "yesterday";
+    if (days < 30) return `${days} days ago`;
+
+    const months = Math.floor(days / 30);
+    if (months < 12) return `${months} month${months === 1 ? "" : "s"} ago`;
+
+    const years = Math.floor(months / 12);
+    return `${years} year${years === 1 ? "" : "s"} ago`;
+  }
+
+  function updateBackupMeta() {
+    const metaEl = document.getElementById("backup-meta");
+    if (!metaEl) return;
+
+    try {
+      const data = loadData() || {};
+      const books = Array.isArray(data.books) ? data.books.length : 0;
+      const sessions = Array.isArray(data.sessions) ? data.sessions.length : 0;
+
+      const lastBackupRaw = data.meta?.lastBackup || null;
+      let dateLabel = "no backups yet";
+      let relative = "";
+      let filenameDate = new Date();
+
+      if (lastBackupRaw) {
+        const d = new Date(lastBackupRaw);
+        if (!Number.isNaN(d.getTime())) {
+          dateLabel = d.toLocaleDateString();
+          relative = formatRelative(d);
+          filenameDate = d;
         }
+      }
+
+      const fullYear = filenameDate.getFullYear();
+      const month = String(filenameDate.getMonth() + 1).padStart(2, "0");
+      const date = String(filenameDate.getDate()).padStart(2, "0");
+      const fileName = `readr-backup-${fullYear}-${month}-${date}.json`;
+
+      if (lastBackupRaw) {
+        metaEl.innerHTML = `
+          Last full backup: <strong>${dateLabel}</strong>
+          <span class="muted">(${relative})</span><br>
+          Current library: ${books} books &bull; ${sessions} sessions<br>
+          <span class="muted">File name preview: <code>${fileName}</code></span>
+        `;
+      } else {
+        metaEl.innerHTML = `
+          Last full backup: <strong>no backups yet</strong><br>
+          Current library: ${books} books &bull; ${sessions} sessions<br>
+          <span class="muted">File name preview: <code>${fileName}</code></span>
+        `;
+      }
+    } catch (err) {
+      console.error("Backup meta error:", err);
     }
-    // center horizontally over bar
-    tip.style.left = `${Math.round(barRect.left + (barRect.width - tipRect.width) / 2)}px`;
-  };
+  }
 
   const show = () => {
-    clearTimeout(hideTimer);
-    renderTodayTooltip();
+    updateBackupMeta();
     tip.classList.add("visible");
     tip.setAttribute("aria-hidden", "false");
-    positionTooltip();
+    isOpen = true;
+  };
 
-    if (!relayoutBound) {
-      relayoutBound = () => positionTooltip();
-      window.addEventListener("resize", relayoutBound, { passive: true });
-      window.addEventListener("scroll", relayoutBound, { passive: true });
+  const hide = () => {
+    tip.classList.remove("visible");
+    tip.setAttribute("aria-hidden", "true");
+    isOpen = false;
+  };
+
+  // Click to toggle (no hover-based hiding so you can click inside)
+  trigger.addEventListener("click", (e) => {
+    e.preventDefault();
+    if (isOpen) {
+      hide();
+    } else {
+      show();
     }
-  };
+  });
 
-  const hide = (delay = 120) => {
-    clearTimeout(hideTimer);
-    hideTimer = setTimeout(() => {
-      tip.classList.remove("visible");
-      tip.setAttribute("aria-hidden", "true");
-      if (relayoutBound) {
-        window.removeEventListener("resize", relayoutBound);
-        window.removeEventListener("scroll", relayoutBound);
-        relayoutBound = null;
+  // Close when clicking outside
+  document.addEventListener(
+    "mousedown",
+    (e) => {
+      if (!isOpen) return;
+      if (!tip.contains(e.target) && !trigger.contains(e.target)) {
+        hide();
       }
-    }, delay);
-  };
+    },
+    { passive: true }
+  );
 
-  // hover/focus interactions
-  bar.addEventListener("mouseenter", show);
-  bar.addEventListener("mouseleave", () => hide(120));
-  bar.addEventListener("focusin", show);
-  bar.addEventListener("focusout", () => hide(0));
+  // Escape key closes and returns focus to the trigger
+  document.addEventListener("keydown", (e) => {
+    if (e.key === "Escape" && isOpen) {
+      hide();
+      trigger.focus();
+    }
+  });
 
-  // click elsewhere hides immediately
-  document.addEventListener("mousedown", (e) => {
-    if (!tip.classList.contains("visible")) return;
-    if (!bar.contains(e.target) && !tip.contains(e.target)) hide(0);
-  }, { passive: true });
+  // Backup Now button inside tooltip
+  const backupNowBtn = document.getElementById("backup-now");
+  if (backupNowBtn) {
+    backupNowBtn.addEventListener("click", () => {
+      const proxy = document.getElementById("export-proxy");
+      if (proxy) proxy.click();
+    });
+  }
 }

@@ -9,10 +9,12 @@ export function initSettings({ adapters } = {}) {
 
   wireSettingsMenu();
   wireBackupImport();
+  wireSessionsBackupImport();
   wireProfileAndDataResets();
   wireCacheAndUpdates();
   wirePreferencesReset();
   wireInstallButton();
+  wireGoalRemindersToggle();
 }
 
 // -----------------------------
@@ -25,23 +27,27 @@ function wirePreferencesReset() {
   btn.addEventListener("click", () => {
     // Keep key in sync with features/books.js
     const PERFS_KEY = "readr:filters:v1";
-    try { localStorage.removeItem(PERFS_KEY); } catch {}
+    try {
+      localStorage.removeItem(PERFS_KEY);
+    } catch {}
 
     // Reset controls to defaults (mirrors Books' UI)
     const searchEl = document.getElementById("search");
-    const sortEl   = document.getElementById("sort");
-    const selects  = ["f-status","f-authors","f-genres","f-series"]
-      .map(id => document.getElementById(id))
+    const sortEl = document.getElementById("sort");
+    const selects = ["f-status", "f-authors", "f-genres", "f-series"]
+      .map((id) => document.getElementById(id))
       .filter(Boolean);
-    const tOnly  = document.getElementById("tbr-only");
+    const tOnly = document.getElementById("tbr-only");
     const tMonth = document.getElementById("tbr-month");
 
     if (searchEl) searchEl.value = "";
-    document.getElementById("search-clear")?.setAttribute("hidden","true");
+    document.getElementById("search-clear")?.setAttribute("hidden", "true");
     if (sortEl) sortEl.value = "createdAt:desc";
-    selects.forEach(sel => Array.from(sel.options).forEach(o => (o.selected = false)));
-    if (tOnly)  tOnly.checked = false;
-    if (tMonth) tMonth.value  = "";
+    selects.forEach((sel) =>
+      Array.from(sel.options).forEach((o) => (o.selected = false))
+    );
+    if (tOnly) tOnly.checked = false;
+    if (tMonth) tMonth.value = "";
 
     A.showToast?.("Preferences reset.", "success");
     // Re-render the list (adapter is provided by app.js)
@@ -58,7 +64,11 @@ function wireSettingsMenu() {
   if (!trigger || !menu) return;
 
   const items = () =>
-    Array.from(menu.querySelectorAll('.r-btn.r-btn--sm,[role="menuitem"],[role="menuitemcheckbox"]'));
+    Array.from(
+      menu.querySelectorAll(
+        '.r-btn.r-btn--sm,[role="menuitem"],[role="menuitemcheckbox"]'
+      )
+    );
   let closeTimer = null;
 
   const openMenu = () => {
@@ -90,7 +100,12 @@ function wireSettingsMenu() {
 
   // Click outside closes
   document.addEventListener("click", (e) => {
-    if (!menu.hidden && !menu.contains(e.target) && e.target !== trigger && !trigger.contains(e.target)) {
+    if (
+      !menu.hidden &&
+      !menu.contains(e.target) &&
+      e.target !== trigger &&
+      !trigger.contains(e.target)
+    ) {
       closeMenu(false);
     }
   });
@@ -110,10 +125,22 @@ function wireSettingsMenu() {
     const i = list.indexOf(document.activeElement);
     const move = (idx) => list[idx]?.focus();
 
-    if (e.key === "ArrowDown") { e.preventDefault(); move(Math.min(i + 1, list.length - 1)); }
-    if (e.key === "ArrowUp")   { e.preventDefault(); move(Math.max(i - 1, 0)); }
-    if (e.key === "Home")      { e.preventDefault(); move(0); }
-    if (e.key === "End")       { e.preventDefault(); move(list.length - 1); }
+    if (e.key === "ArrowDown") {
+      e.preventDefault();
+      move(Math.min(i + 1, list.length - 1));
+    }
+    if (e.key === "ArrowUp") {
+      e.preventDefault();
+      move(Math.max(i - 1, 0));
+    }
+    if (e.key === "Home") {
+      e.preventDefault();
+      move(0);
+    }
+    if (e.key === "End") {
+      e.preventDefault();
+      move(list.length - 1);
+    }
     if (e.key === "Enter" || e.key === " ") {
       e.preventDefault();
       document.activeElement?.click();
@@ -129,7 +156,7 @@ function wireSettingsMenu() {
 function wireBackupImport() {
   if (!A.wireImportExport) return;
 
-  const inputEl  = document.getElementById("import-file");
+  const inputEl = document.getElementById("import-file");
   const importBtn = document.getElementById("import-proxy");
   const exportBtn = document.getElementById("export-proxy");
 
@@ -145,7 +172,33 @@ function wireBackupImport() {
       if (typeof A.onImport === "function") {
         A.onImport();
       }
-    }
+    },
+  });
+}
+
+// -----------------------------
+// Sessions-only backup / import wiring
+// -----------------------------
+function wireSessionsBackupImport() {
+  if (!A.wireSessionsImportExport) return;
+
+  const inputEl = document.getElementById("import-sessions-file");
+  const importBtn = document.getElementById("import-sessions-proxy");
+  const exportBtn = document.getElementById("export-sessions-proxy");
+
+  if (!inputEl || !importBtn || !exportBtn) return;
+
+  A.wireSessionsImportExport({
+    inputEl,
+    importBtn,
+    exportBtn,
+    toast: (msg, type, details) => A.showToast?.(msg, type, { details }),
+    onImport: () => {
+      // Caller decides how to refresh app state post-import
+      if (typeof A.onImport === "function") {
+        A.onImport();
+      }
+    },
   });
 }
 
@@ -200,7 +253,9 @@ function wireInstallButton() {
     // Temporarily block double-clicks while the prompt is open
     installBtn.disabled = true;
     deferredInstallPrompt.prompt();
-    const { outcome } = await deferredInstallPrompt.userChoice.catch(() => ({ outcome: "dismissed" }));
+    const { outcome } = await deferredInstallPrompt.userChoice.catch(() => ({
+      outcome: "dismissed",
+    }));
     deferredInstallPrompt = null;
 
     if (outcome === "accepted") {
@@ -229,7 +284,7 @@ function wireInstallButton() {
 // -----------------------------
 function wireProfileAndDataResets() {
   const resetProfileBtn = document.getElementById("reset-profile");
-  const resetDataBtn    = document.getElementById("reset-data");
+  const resetDataBtn = document.getElementById("reset-data");
 
   if (resetProfileBtn) {
     resetProfileBtn.addEventListener("click", () => {
@@ -241,11 +296,71 @@ function wireProfileAndDataResets() {
 
   if (resetDataBtn) {
     resetDataBtn.addEventListener("click", () => {
-      if (confirm("This will erase all books and logs. Are you sure?")) {
+      if (
+        confirm("This will erase all books and reading sessions. Are you sure?")
+      ) {
         A.resetData?.(); // implemented by caller
       }
     });
   }
+}
+
+// -----------------------------
+// Goal reminders toggle (persistent + toast)
+// -----------------------------
+function wireGoalRemindersToggle() {
+  const GOAL_REMINDERS_KEY = "readr:goalReminders:v1";
+  const btn = document.getElementById("goal-reminders");
+  if (!btn) return;
+
+  const stateSpan = btn.querySelector(".goal-reminders__state");
+
+  const loadEnabled = () => {
+    try {
+      const raw = localStorage.getItem(GOAL_REMINDERS_KEY);
+      if (raw == null) return false; // defailt: Off
+      if (raw === "true" || raw === "false") return raw === "true";
+      return !!JSON.parse(raw);
+    } catch {
+      return false;
+    }
+  };
+
+  const saveEnabled = (value) => {
+    try {
+      localStorage.setItem(GOAL_REMINDERS_KEY, JSON.stringify(!!value));
+    } catch {
+      // ignore quota errors
+    }
+  };
+
+  const updateVisual = (isOn) => {
+    btn.setAttribute("aria-checked", isOn ? "true" : "false");
+    if (stateSpan) {
+      stateSpan.textContent = isOn ? "On" : "Off";
+    }
+  };
+
+  // Hook for your actual reminder behavior (notifications, etc.)
+  const applyReminderSetting = (isOn) => {
+    // TODO: plug your real behavior in here if/when you add it
+    // e.g. schedule/cancel reminder pings.
+  };
+
+  // init from storage
+  let enabled = loadEnabled();
+  updateVisual(enabled);
+  applyReminderSetting(enabled);
+
+  btn.addEventListener("click", () => {
+    enabled = !enabled;
+    updateVisual(enabled);
+    saveEnabled(enabled);
+    applyReminderSetting(enabled);
+
+    // Settings saved toast
+    A.showToast?.(`Goal reminders: ${enabled ? "On" : "Off"}`, "success");
+  });
 }
 
 // -----------------------------
@@ -263,11 +378,17 @@ function wireCacheAndUpdates() {
     }
     try {
       const keys = await caches.keys();
-      const runtimeKeys = keys.filter((key) => key.startsWith("readr-runtime-"));
+      const runtimeKeys = keys.filter((key) =>
+        key.startsWith("readr-runtime-")
+      );
       await Promise.all(runtimeKeys.map((key) => caches.delete(key)));
       A.showToast?.("Offline runtime cache cleared.", "success");
     } catch (err) {
-      A.showToast?.("Could not clear cache. See console for details.", "error", { timeout: 5000 });
+      A.showToast?.(
+        "Could not clear cache. See console for details.",
+        "error",
+        { timeout: 5000 }
+      );
       console.warn("clear-runtime-cache-error", err);
     }
   });

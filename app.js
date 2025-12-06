@@ -1,5 +1,5 @@
 /*
-  Readr v1.7.0
+  Readr v1.8.0
 */
 
 import * as Books from "./features/books.js";
@@ -7,9 +7,12 @@ import * as Sessions from "./features/sessions.js";
 import { attachSearchUI } from "./features/search-ui.js";
 import { initSettings } from "./features/settings.js";
 import { smartSearch, tokenize, highlightText } from "./utils/search.js";
-import { wireImportExport } from "./ui/wire-import-export.js";
+import {
+  wireImportExport,
+  wireSessionsImportExport,
+} from "./ui/wire-import-export.js";
 import { normalizeStatus } from "./utils/constants.js";
-import { initTooltip } from "./features/tooltip.js";
+import { initTooltip, initBackupTooltip } from "./features/tooltip.js";
 import {
   initProfile,
   renderProfileUI,
@@ -66,12 +69,15 @@ async function init() {
       showToast,
       renderProfileUI, // so sessions can update the goals widget
       renderBooks: Books.render,
+      getGoalType,
+      getGoalValue,
     },
   });
 
   initSettings({
     adapters: {
       wireImportExport,
+      wireSessionsImportExport,
       showToast,
       checkForUpdatesNow,
       renderBooks: Books.render,
@@ -84,6 +90,7 @@ async function init() {
         // Books owns filters; rendering will show new data
         renderProfileUI();
         Books.render();
+        Sessions.render();
       },
       // Reset profile & data live here so Settings stays decoupled
       resetProfile: () => {
@@ -110,6 +117,7 @@ async function init() {
         buildBookOptions();
         Books.render();
         renderProfileUI();
+        Sessions.render();
       },
     },
   });
@@ -132,6 +140,8 @@ async function init() {
   initTooltip({
     adapters: { logs, getBookTitleById, dayKey },
   });
+
+  initBackupTooltip();
 
   // Goal reminders (settings + scheduler + ARIA live)
   initGoalRemindersUI();
@@ -160,6 +170,16 @@ let profile = {
   dailyGoal: null,
   bookGoals: { monthly: 0, yearly: 0 },
 };
+
+function getGoalType() {
+  // default to "pages" if no goal is set yet
+  return profile?.dailyGoal?.type || "pages";
+}
+
+function getGoalValue() {
+  // default to 0 if no goal is set yet
+  return profile?.dailyGoal?.value || 0;
+}
 
 // Goal reminders: "off" | "daily" | "weekly"
 let goalReminderMode = localStorage.getItem(GOAL_REMINDERS_KEY) || "off";
@@ -275,6 +295,9 @@ if (logForm) {
     const bookId = +document.getElementById("log-book").value;
     const pages = document.getElementById("log-pages").value;
     const mins = document.getElementById("log-mins").value;
+    const notesEl = document.getElementById("log-notes");
+    const notes = notesEl?.value.trim() || "";
+
     const dateEl = document.getElementById("log-date");
     const date = dateEl?.value || dayKey();
     if (!bookId) {
@@ -287,6 +310,7 @@ if (logForm) {
       date, // "YYYY-MM-DD"
       pagesRead: pages ? +pages : undefined,
       minutes: mins ? +mins : undefined,
+      notes: notes || undefined,
     });
     saveLogs();
 
@@ -306,6 +330,9 @@ if (logForm) {
     // default date back to today
     if (dateEl) {
       dateEl.value = dayKey(); // keep it on local "today"
+    }
+    if (notesEl) {
+      notesEl.value = "";
     }
     renderProfileUI();
     Books.render();
@@ -467,7 +494,7 @@ function withUndo({ label = "Action", apply, revert, details = [] }) {
     actions: [
       {
         label: "Undo",
-        className: "r-btn--sm",
+        className: "r-btn r-btn--sm",
         onClick: () => {
           revert?.();
           renderProfileUI();
@@ -492,12 +519,15 @@ function announceGoalUpdate(message) {
 }
 
 function nextReminderMode(current) {
-  return (current = "off" ? "daily" : current === "daily" ? "weekly" : "off");
+  if (current === "off") return "daily";
+  if (current === "daily") return "weekly";
+  return "off";
 }
 
 function initGoalRemindersUI() {
   const btn = document.getElementById("goal-reminders");
   if (!btn) {
+    // Even if the button isn't present, still schedule reminders
     scheduleGoalReminder();
     return;
   }
@@ -507,16 +537,28 @@ function initGoalRemindersUI() {
     goalReminderMode = "off";
   }
 
+  const labelEl = btn.querySelector(".goal-reminders__label");
+  const stateEl = btn.querySelector(".goal-reminders__state");
+
   const syncButton = () => {
-    let label;
+    let stateLabel;
     if (goalReminderMode === "daily") {
-      label = "Goal reminders: Daily";
+      stateLabel = "Daily";
     } else if (goalReminderMode === "weekly") {
-      label = "Goal reminders: Weekly";
+      stateLabel = "Weekly";
     } else {
-      label = "Goal reminders: Off";
+      stateLabel = "Off";
     }
-    btn.textContent = label;
+
+    if (labelEl && stateEl) {
+      // New pill-style markup
+      labelEl.textContent = "goal-reminders";
+      stateEl.textContent = stateLabel;
+    } else {
+      // Fallback: simple text-only button
+      btn.textContent = `Goal reminders: ${stateLabel}`;
+    }
+
     btn.setAttribute(
       "aria-checked",
       goalReminderMode === "off" ? "false" : "true"
@@ -537,6 +579,9 @@ function initGoalRemindersUI() {
         ? "Goal reminders turned off."
         : `Goal reminders set to ${goalReminderMode}.`;
     announceGoalUpdate(message);
+
+    // Settings-saved toast
+    showToast(message, "success");
 
     // Request browser notification permission on opt-in
     if (
@@ -771,61 +816,70 @@ function migrateStatusesToReading(books, saveBooks) {
 // Kick things off
 init();
 
-// ---- Service Worker registration + update prompt (unified toast) ----
-(async function registerServiceWorker() {
-  if (!("serviceWorker" in navigator)) return;
+// -----------------------
+// Service Worker (updates)
+// -----------------------
 
-  try {
-    const reg = await navigator.serviceWorker.register("./sw.js");
+// Only register the SW on the deployed GitHub Pages site, not on localhost
+if (location.hostname === "conorgregson.github.io") {
+  (async function registerServiceWorker() {
+    if (!("serviceWorker" in navigator)) return;
 
-    function promptUpdate() {
-      // persistent toast with actions (no auto-timeout)
-      showToast("Update available", "info", {
-        actions: [
-          {
-            label: "Refresh",
-            // Ask the waiting SW to skip waiting
-            onClick: () => reg.waiting?.postMessage({ type: "SKIP_WAITING" }),
-            className: "btn btn-sm",
-          },
-          {
-            label: "Dismiss",
-            onClick: () => {},
-          },
-        ],
-        timeout: 0,
+    try {
+      const reg = await navigator.serviceWorker.register("./sw.js");
+
+      function promptUpdate() {
+        // persistent toast with actions (no auto-timeout)
+        showToast("Update available", "info", {
+          actions: [
+            {
+              label: "Refresh",
+              // Ask the waiting SW to skip waiting
+              onClick: () => reg.waiting?.postMessage({ type: "SKIP_WAITING" }),
+              className: "btn btn-sm",
+            },
+            {
+              label: "Dismiss",
+              onClick: () => {},
+            },
+          ],
+          timeout: 0,
+        });
+      }
+
+      // If there's already a waiting worker, prompt immediately
+      if (reg.waiting) {
+        promptUpdate();
+      }
+
+      // When a new SW is found, wait until it's installed, then prompt
+      reg.addEventListener("updatefound", () => {
+        const newSW = reg.installing;
+        if (!newSW) return;
+        newSW.addEventListener("statechange", () => {
+          if (
+            newSW.state === "installed" &&
+            navigator.serviceWorker.controller
+          ) {
+            promptUpdate();
+          }
+        });
+      });
+
+      // When the controller changes, a new SW has taken over → reload once
+      let refreshing = false;
+      navigator.serviceWorker.addEventListener("controllerchange", () => {
+        if (refreshing) return;
+        refreshing = true;
+        window.location.reload();
+      });
+    } catch (err) {
+      showToast("Service Worker registration failed.", "error", {
+        timeout: 5000,
       });
     }
-
-    // If there's already a waiting worker, prompt immediately
-    if (reg.waiting) {
-      promptUpdate();
-    }
-
-    // When a new SW is found, wait until it's installed, then prompt
-    reg.addEventListener("updatefound", () => {
-      const newSW = reg.installing;
-      if (!newSW) return;
-      newSW.addEventListener("statechange", () => {
-        if (newSW.state === "installed" && navigator.serviceWorker.controller) {
-          promptUpdate();
-        }
-      });
-    });
-
-    // When the controller changes, a new SW has taken over → reload once
-    let refreshing = false;
-    navigator.serviceWorker.addEventListener("controllerchange", () => {
-      if (refreshing) return;
-      refreshing = true;
-      window.location.reload();
-    });
-  } catch (err) {
-    showToast("Service Worker registration failed.", "error", {
-      timeout: 5000,
-    });
-  }
-})();
+  })();
+}
 
 // dev-only test hook (safe: only active on localhost)
 if (

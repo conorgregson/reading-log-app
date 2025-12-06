@@ -127,14 +127,28 @@
           <hr class="menu-sep" role="separator" aria-orientation="horizontal" />
 
           <!-- Group 2: Data management -->
-          <button
-            id="export-proxy"
-            class="r-btn r-btn--sm"
-            role="menuitem"
-            tabindex="-1"
-          >
-            Backup data
-          </button>
+          <div class="settings__row settings__row--backup">
+            <button
+              id="export-proxy"
+              class="r-btn r-btn--sm"
+              role="menuitem"
+              tabindex="-1"
+            >
+              Backup data
+            </button>
+
+            <!-- Backup details tooltip trigger -->
+            <button
+              id="backup-help"
+              type="button"
+              class="r-btn r-btn--icon backup-help"
+              aria-label="What does Backup data include?"
+              aria-describedby="backup-tooltip"
+              tabindex="-1"
+            >
+              ?
+            </button>
+          </div>
 
           <button
             id="import-proxy"
@@ -152,6 +166,76 @@
             hidden
             aria-hidden="true"
           />
+
+          <!-- Backup details tooltip panel (positioned by JS) -->
+          <div
+            id="backup-tooltip"
+            role="tooltip"
+            aria-hidden="true"
+            class="backup-tooltip"
+          >
+            <h3 class="backup-tooltip__title">Backup Types</h3>
+
+            <p class="backup-tooltip__list">
+              <strong>Backup data</strong> exports your full library:
+            </p>
+            <ul class="backup-tooltip__list">
+              <li>Profile (daily goal + book goals)</li>
+              <li>Books (status, series, formats, ISBN, etc.)</li>
+              <li>Reading sessions (your log history)</li>
+            </ul>
+
+            <p class="backup-tooltip__text">
+              Use <strong>Sessions backup</strong> if you only need to move or
+              merge reading sessions between devices - it won't touch your books
+              or profile.
+            </p>
+
+            <p id="backup-meta" class="backup-tooltip__meta"></p>
+            <button id="backup-now" class="r-btn r-btn--sm backup-now-btn">
+              Backup Now
+            </button>
+          </div>
+
+          <hr class="menu-sep" role="separator" />
+
+          <!-- Sessions-only Import/Export -->
+          <div class="settings__group">
+            <span class="settings__label">Sessions backup</span>
+
+            <!-- Sessions-only Export -->
+            <button
+              id="export-sessions-proxy"
+              class="r-btn r-btn--sm"
+              role="menuitem"
+            >
+              Export sessions only
+            </button>
+
+            <!-- Sessions-only Import -->
+            <button
+              id="import-sessions-proxy"
+              class="r-btn r-btn--sm"
+              role="menuitem"
+            >
+              Import sessions only
+            </button>
+
+            <!-- Hidden input for file picker -->
+            <input
+              id="import-sessions-file"
+              type="file"
+              accept="application/json,.json"
+              hidden
+            />
+
+            <!-- Sessions meta line -->
+            <p class="backup-tooltip__meta sessions-meta">
+              Sessions backup exports only your reading sessions (dates,
+              minutes, pages, and notes) and merges them into your log without
+              changing your books or goals.
+            </p>
+          </div>
 
           <hr class="menu-sep" role="separator" aria-orientation="horizontal" />
 
@@ -218,7 +302,13 @@
             aria-checked="false"
             tabindex="-1"
           >
-            Goal reminders: Off
+            <span class="goal-reminders__label">Goal reminders</span>
+
+            <span class="goal-reminders__pill" aria-hidden="true">
+              <span class="goal-reminders__thumb"></span>
+            </span>
+
+            <span class="goal-reminders__state">Off</span>
           </button>
         </div>
       </div>
@@ -793,12 +883,20 @@
 
         <label class="sr-only" for="log-date">Date</label>
         <input id="log-date" type="date" />
+
+        <label class="sr-only" for="log-notes">Notes</label>
+        <textarea
+          id="log-notes"
+          rows="2"
+          placeholder="Notes (optional)"
+        ></textarea>
+
         <button type="submit" class="r-btn r-btn--primary">Add Session</button>
       </form>
     </section>
 
-    <section id="Session-history">
-      <h2>Session History</h2>
+    <section id="session-history">
+      <h2 id="session-history-heading">Session History</h2>
 
       <!-- Screen-reader announcement area for Session History -->
       <div
@@ -825,9 +923,14 @@
           </select>
         </label>
 
-        <label class="filter" for="history-date"
-          >Date
-          <input id="history-date" type="date" />
+        <label class="filter" for="history-date-start"
+          >Start date
+          <input id="history-date-start" type="date" />
+        </label>
+
+        <label for="history-date-end"
+          >End Date
+          <input id="history-date-end" type="date" />
         </label>
 
         <button id="history-clear" type="button" class="r-btn r-btn--ghost">
@@ -835,14 +938,53 @@
         </button>
       </div>
 
+      <div class="row">
+        <label class="filter" for="history-book-text">
+          Book title
+          <input
+            id="history-book-text"
+            type="search"
+            placeholder="Filter by book title..."
+          />
+        </label>
+      </div>
+
+      <div class="row">
+        <label class="sr-only" for="history-search">Search sessions</label>
+        <div class="input-wrap">
+          <input
+            id="history-search"
+            type="search"
+            placeholder="Search sessions (book, notes, date)..."
+          />
+          <button
+            id="history-search-clear"
+            type="button"
+            class="input-clear"
+            aria-label="Clear session search"
+            title="Clear"
+          >
+            &times;
+          </button>
+        </div>
+      </div>
+
       <div class="table-wrap">
-        <table class="table" aria-describedby="history-help">
+        <table
+          class="table"
+          aria-describedby="history-help"
+          aria-labelledby="session-history-heading"
+        >
+          <caption class="sr-only">
+            Reading session history
+          </caption>
           <thead>
             <tr>
-              <th>Date</th>
-              <th>Book</th>
-              <th>Pages</th>
-              <th>Minutes</th>
+              <th scope="col">Date</th>
+              <th scope="col">Book</th>
+              <th scope="col">Pages</th>
+              <th scope="col">Minutes</th>
+              <th scope="col">Notes</th>
               <th></th>
             </tr>
           </thead>
@@ -873,6 +1015,12 @@
         >
           Next
         </button>
+      </div>
+
+      <!-- Session History: empty / no-results message -->
+      <div id="history-empty" class="muted" aria-live="polite" hidden>
+        No sessions match your filters yet. Try clearing filters or changing the
+        date range.
       </div>
     </section>
 
