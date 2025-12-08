@@ -1,14 +1,12 @@
-/**********************************************************************
- *  V1.8.0 — Ultra Optimized Version
- *  - Stable memoized sorted logs
- *  - Pre-indexed dateKey (YYYY-MM-DD) + noteLower (lowercase notes)
- *  - Cached filters
- *  - Cached book titles
- *  - Incremental diff ring for DOM row patching
- *  - Fast pagination + highlight pipeline
- *  - Zero redundant DOM reads
- *  - All existing behavior preserved 1:1
- **********************************************************************/
+// V1.8.0 — Ultra Optimized Version
+// - Stable memoized sorted logs
+// - Pre-indexed dateKey (YYYY-MM-DD) + noteLower (lowercase notes)
+// - Cached filters
+// - Cached book titles
+// - Incremental diff ring for DOM row patching
+// - Fast pagination + highlight pipeline
+// - Zero redundant DOM reads
+// - All existing behavior preserved 1:1
 
 import { highlightText, tokenize } from "../utils/search.js";
 import { $ } from "../utils/dom.js";
@@ -44,6 +42,7 @@ const emptyEl = $("#history-empty");
 export function init({ adapters }) {
   A = adapters;
   attachHistorySearchUI();
+  attachHistoryKeyboardNav();
 
   // Filter inputs
   [
@@ -612,6 +611,88 @@ function attachHistorySearchUI() {
 }
 
 // ------------------------------------------------------
+// Keyboard nav for Session History rows
+// ------------------------------------------------------
+function attachHistoryKeyboardNav() {
+  if (!tbody) return;
+
+  tbody.addEventListener("keydown", (e) => {
+    // Respect shortcuts toggle from settings
+    const shortcutsOn =
+      !A || typeof A.getShortcutsEnabled !== "function"
+        ? true
+        : !!A.getShortcutsEnabled();
+    if (!shortcutsOn) return;
+
+    if (e.altKey || e.ctrlKey || e.metaKey) return;
+
+    const target = e.target;
+    const tag = target && target.tagName;
+
+    // Don't interface when user is typing inside cells
+    if (
+      tag === "INPUT" ||
+      tag === "TEXTAREA" ||
+      tag === "SELECT" ||
+      target?.isContentEditable
+    ) {
+      return;
+    }
+
+    const row = target.closest && target.closest("tr");
+    if (!row) return;
+
+    const rows = Array.from(tbody.querySelectorAll("tr"));
+    const i = rows.indexOf(row);
+    if (i === -1) return;
+
+    const focusRowAt = (idx) => {
+      const next = rows[idx];
+      if (next) {
+        e.preventDefault();
+        next.focus();
+      }
+    };
+
+    switch (e.key) {
+      case "ArrowDown":
+        if (i < rows.length - 1) focusRowAt(i + 1);
+        break;
+      case "ArrowUp":
+        if (i > 0) focusRowAt(i - 1);
+        break;
+      case "Home":
+        focusRowAt(0);
+        break;
+      case "End":
+        focusRowAt(rows.length - 1);
+        break;
+      case "Enter": {
+        e.preventDefault();
+        // Prefer Edit button; fall back to first editable field
+        const editBtn = row.querySelector(".edit-btn");
+        if (editBtn) {
+          editBtn.click();
+        } else {
+          const firstField = row.querySelector("input, textarea, select");
+          firstField?.focus();
+        }
+        break;
+      }
+      case "Escape":
+        e.preventDefault();
+        // Return to history search input
+        if (searchInput) {
+          searchInput.focus();
+        }
+        break;
+      default:
+        break;
+    }
+  });
+}
+
+// ------------------------------------------------------
 // Summaries + Streaks (unchanged logic, fast data)
 // ------------------------------------------------------
 function isoKey(date) {
@@ -640,21 +721,36 @@ function renderSummariesAndStreaks(sorted) {
   const now = new Date();
   const todayKey = isoKey(now);
 
-  // Per-day sums
+  // Per-day sums: prefer Analytics if available
   const perDay = new Map();
-  for (const session of sorted) {
-    const dayKey = session.dateKey;
-    let dayTotals = perDay.get(dayKey);
-    if (!dayTotals) {
-      dayTotals = { pages: 0, mins: 0 };
-      perDay.set(dayKey, dayTotals);
+
+  if (A && A.Analytics && typeof A.Analytics.getPerDayStats === "function") {
+    const days = A.Analytics.getPerDayStats() || [];
+    for (const day of days) {
+      const key = day.dateKey;
+      if (!key) continue;
+      perDay.set(key, {
+        pages: Number(day.pages) || 0,
+        mins: Number(day.minutes ?? day.mins ?? 0) || 0,
+      });
     }
+  } else {
+    // Fallback: compute from the sorted sessions (legacy path)
+    for (const session of sorted) {
+      const dayKey = session.dateKey;
+      if (!dayKey) continue;
+      let dayTotals = perDay.get(dayKey);
+      if (!dayTotals) {
+        dayTotals = { pages: 0, mins: 0 };
+        perDay.set(dayKey, dayTotals);
+      }
 
-    const p = Number(session.pages) || 0;
-    const m = Number(session.mins) || 0;
+      const p = Number(session.pages) || 0;
+      const m = Number(session.mins) || 0;
 
-    dayTotals.pages += p;
-    dayTotals.mins += m;
+      dayTotals.pages += p;
+      dayTotals.mins += m;
+    }
   }
 
   // Week + Month accumulators
@@ -668,6 +764,8 @@ function renderSummariesAndStreaks(sorted) {
 
   for (const [dateKey, dayTotals] of perDay) {
     const dayTime = new Date(dateKey).getTime();
+    if (!Number.isFinite(dayTime)) continue;
+
     const diff = nowTime - dayTime;
 
     if (diff <= 7 * msInDay) {
@@ -685,13 +783,13 @@ function renderSummariesAndStreaks(sorted) {
   monthPagesEl.textContent = monthPages;
   monthMinsEl.textContent = monthMins;
 
-  // Compute streaks
+  // Goal-based streaks
   const { current, max } = computeStreaks(perDay, now);
 
   streakCurrentEl.textContent = current;
   streakMaxEl.textContent = max;
 
-  // Announce changes
+  // SR announcements for streaks + daily goal
   const announce =
     typeof window !== "undefined" &&
     typeof window.announceGoalUpdate === "function"

@@ -1,5 +1,5 @@
 /*
-  Readr v1.8.0
+  Readr v1.9.0
 */
 
 import * as Books from "./features/books.js";
@@ -18,6 +18,10 @@ import {
   renderProfileUI,
   updateBookGoalsUI,
 } from "./features/profile.js";
+import * as Analytics from "./features/analytics.js";
+import { initCharts, renderCharts } from "./features/charts.js";
+import { initSnapshot, renderSnapshotCard } from "./features/snapshot.js";
+import * as Badges from "./features/badges.js";
 
 const searchUI = attachSearchUI({
   render: () => Books.render(),
@@ -39,6 +43,24 @@ async function init() {
   // normalize legacy statuses before first render
   migrateStatusesToReading(books, saveBooks);
 
+  // Analytics: central stats for charts/profile/sessions
+  Analytics.initAnalytics();
+  Analytics.loadAnalyticsData({ books, sessions: logs });
+
+  // Badges: light gamification layer on top of analytics
+  Badges.initBadges({
+    adapters: {
+      getTotals: Analytics.getTotals,
+      getStreaks: Analytics.getStreaks,
+      getPerBookStats: Analytics.getPerBookStats,
+      getBooks: () => books,
+      getLogs: () => logs,
+      getDailyGoal: () => profile.dailyGoal || null,
+      dayKey,
+      showToast,
+    },
+  });
+
   buildBookOptions(); // to populate the log form
 
   // Hand Books everything it needs (data + helpers) in a narrow adapter
@@ -54,6 +76,7 @@ async function init() {
     smartSearch,
     tokenize,
     highlightText,
+    Analytics,
   };
 
   await Books.init({ adapters, ui: searchUI });
@@ -71,6 +94,8 @@ async function init() {
       renderBooks: Books.render,
       getGoalType,
       getGoalValue,
+      Analytics,
+      getShortcutsEnabled,
     },
   });
 
@@ -87,6 +112,10 @@ async function init() {
         loadLogs();
         loadProfile();
         buildBookOptions();
+        // Analytics + charts refresh
+        Analytics.initAnalytics();
+        Analytics.loadAnalyticsData({ books, sessions: logs });
+        renderCharts();
         // Books owns filters; rendering will show new data
         renderProfileUI();
         Books.render();
@@ -119,6 +148,8 @@ async function init() {
         renderProfileUI();
         Sessions.render();
       },
+      getShortcutsEnabled,
+      toggleShortcuts: (enabled) => setShortcutsEnabled(enabled),
     },
   });
 
@@ -134,6 +165,31 @@ async function init() {
         return profile;
       },
       dayKey,
+      Analytics,
+      getBadgeCatalog: Badges.getBadgeCatalog,
+      getUnlockedBadges: Badges.getUnlockedBadges,
+    },
+  });
+
+  initCharts({
+    adapters: {
+      getTotals: Analytics.getTotals,
+      getPerBookStats: Analytics.getPerBookStats,
+      getPerDayStats: Analytics.getPerDayStats,
+      getTrend: Analytics.getTrend,
+      getTrendSummary: Analytics.getTrendSummary,
+      getBookTitleById,
+      getChartTheme: () => getEffectiveMode(),
+    },
+  });
+
+  initSnapshot({
+    adapters: {
+      getBookTitleById,
+      getBadges: Badges.getUnlockedBadges,
+      getTheme: () =>
+        document.body.classList.contains("mode-dark") ? "dark" : "light",
+      showToast,
     },
   });
 
@@ -159,6 +215,7 @@ const BOOKS_KEY = "readinglog.v1";
 const LOGS_KEY = "readinglog.logs.v1";
 const PROFILE_KEY = "readinglog.profile.v1";
 const GOAL_REMINDERS_KEY = "readinglog.goal-reminders.v1";
+const SHORTCUTS_KEY = "readr:shortcuts:v1";
 
 // ------------------------
 // App State
@@ -184,6 +241,27 @@ function getGoalValue() {
 // Goal reminders: "off" | "daily" | "weekly"
 let goalReminderMode = localStorage.getItem(GOAL_REMINDERS_KEY) || "off";
 let goalReminderTimeoutId = null;
+
+// Keyboard shortcuts (settings-toggleable)
+let shortcutsEnabled = loadShortcutsPref();
+
+// Keep the mini help line under the log form in sync with the setting
+function syncShortcutsHint() {
+  const hint = document.getElementById("shortcuts-hint");
+  if (!hint) return;
+
+  if (shortcutsEnabled) {
+    hint.hidden = false;
+    // Re-set the text each time so aria-live will announce the change
+    hint.innerHTML =
+      "Shortcuts on: Press <kbd>N</kbd> to add a session, <kbd>H</kbd> to jump to Session History search, use <kbd>\u2191</kbd>/<kbd>\u2193</kbd> to move between rows, <kbd>Enter</kbd> to edit, and <kbd>Esc</kbd> to return to search.";
+  } else {
+    hint.hidden = true;
+  }
+}
+
+// Initial sync once DOM + state are ready
+syncShortcutsHint();
 
 // -----------------------
 // Theme (light/dark/system with live OS sync)
@@ -340,6 +418,53 @@ if (logForm) {
   });
 }
 
+// -----------------------
+// Keyboard Shortcuts (global)
+// -----------------------
+document.addEventListener("keydown", (e) => {
+  if (!shortcutsEnabled) return;
+  if (e.defaultPrevented) return;
+  if (e.altKey || e.ctrlKey | e.metaKey) return;
+
+  const target = e.target;
+  const tag = target && target.tagName;
+  if (
+    tag === "INPUT" ||
+    tag === "TEXTAREA" ||
+    tag === "SELECT" ||
+    target?.isContentEditable
+  ) {
+    // Don't hijack typing inside fields
+    return;
+  }
+
+  // "N" → jump to Add Reading Session form
+  if (e.key === "n" || e.key === "N") {
+    const form = document.getElementById("log-form");
+    const bookSelect = document.getElementById("log-book");
+    if (!form | !bookSelect) return;
+
+    e.preventDefault();
+    form.scrollIntoView({ behavior: "smooth", block: "center" });
+    bookSelect.focus();
+    return;
+  }
+
+  // "H" → jump to Session History search
+  if (e.key === "h" || e.key === "H") {
+    const search = document.getElementById("history-search");
+    if (!search) return;
+
+    e.preventDefault();
+    const historySection = document.getElementById("session-history");
+    if (historySection) {
+      historySection.scrollIntoView({ behavior: "smooth", block: "center" });
+    }
+    search.focus();
+    return;
+  }
+});
+
 // Save goal button
 const saveGoalBtn = document.getElementById("save-goal");
 if (saveGoalBtn) {
@@ -468,10 +593,28 @@ function setThemeAriaState() {
 if (typeof applyAppearance === "function") {
   const _applyAppearance = applyAppearance;
   applyAppearance = function (mode) {
+    // Update the global theme (body classes, etc.)
     _applyAppearance(mode);
+
+    // Keep the theme toggle button ARIA state in sync
     setThemeAriaState();
+
+    // Keep the Shareable Snapshot card + logo in sync with the new theme
+    try {
+      renderSnapshotCard();
+    } catch (err) {
+      // Snapshot might not be initialized yet; ignore silently in that case
+      if (console?.debug) {
+        console.debug("Snapshot theme sync skipped:", err);
+      }
+    }
   };
+
+  // Run once on initial load so ARIA + snapshot are correct
   setThemeAriaState();
+  try {
+    renderSnapshotCard();
+  } catch {}
 }
 
 // -----------------------
@@ -655,6 +798,36 @@ function fireGoalReminder() {
   announceGoalUpdate(message);
 }
 
+function loadShortcutsPref() {
+  try {
+    const raw = localStorage.getItem(SHORTCUTS_KEY);
+    if (raw === null) {
+      // Defailt ON for non-touch devices, OFF for touch
+      return !("ontouchstart" in window);
+    }
+    if (raw === "true" || raw === "false") return raw === "true";
+    return !!JSON.parse(raw);
+  } catch {
+    return true;
+  }
+}
+
+function setShortcutsEnabled(next) {
+  shortcutsEnabled = !!next;
+  try {
+    localStorage.setItem(SHORTCUTS_KEY, JSON.stringify(shortcutsEnabled));
+  } catch {
+    // ignore quota errors
+  }
+
+  // Update the mini help line visibility/content + live region
+  syncShortcutsHint();
+}
+
+function getShortcutsEnabled() {
+  return shortcutsEnabled;
+}
+
 // -----------------------
 // Toasts
 // -----------------------
@@ -755,7 +928,19 @@ function loadBooks() {
 }
 function saveBooks() {
   localStorage.setItem(BOOKS_KEY, JSON.stringify(books));
+  // Keep analytics in sync
+  if (Analytics && typeof Analytics.loadAnalyticsData === "function") {
+    Analytics.loadAnalyticsData({ books, sessions: logs });
+  }
+  renderCharts();
+  renderSnapshotCard();
+
+  // Evaluate badges whenever books change (e.g., book finished)
+  if (Badges && typeof Badges.evaluateBadges === "function") {
+    Badges.evaluateBadges();
+  }
 }
+
 function loadLogs() {
   try {
     logs = JSON.parse(localStorage.getItem(LOGS_KEY)) || [];
@@ -765,6 +950,17 @@ function loadLogs() {
 }
 function saveLogs() {
   localStorage.setItem(LOGS_KEY, JSON.stringify(logs));
+  // Keep analytics in sync
+  if (Analytics && typeof Analytics.loadAnalyticsData === "function") {
+    Analytics.loadAnalyticsData({ books, sessions: logs });
+  }
+  renderCharts();
+  renderSnapshotCard();
+
+  // Evaluate badges whenever sessions/logs change
+  if (Badges && typeof Badges.evaluateBadges === "function") {
+    Badges.evaluateBadges();
+  }
 }
 
 function loadProfile() {

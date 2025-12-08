@@ -4,6 +4,41 @@ All notable changes to **Readr** (reading log app) will be documented in this fi
 
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/), and we aim to follow [Semantic Versioning](https://semver.org/).
 
+## [v1.9.0] — Visualization & Motivation (2025-12-08)
+
+### Added
+
+- Introduced per-day reading trend chart with accessible text summaries.
+- Added Top Books chart showing reading time distribution across finished books.
+- Added keyboard shortcut to jump directly to Session History search.
+- Added small help hint beneath the session log form when shortcuts are enabled.
+- Added Shareable Snapshot card with PNG export support.
+- Added theme-aware logo switching (teal-on-white in light mode, white-on-teal in dark mode).
+- Added ARIA live regions for chart summaries, badges summary, and snapshot trend line.
+- Added a11y improvements across Snapshot, Stats, and badge notifications.
+
+### Changed
+
+- Updated Snapshot theme behavior to follow current app mode instead of OS mode.
+- Improved dark-mode contrast for Snapshot books list, badges list, and metadata fields.
+- Refined Snapshot layout spacing, metric sizing, and typography for clarity.
+- Updated badge styling so unlocked badges highlight consistently.
+- Polished session form guidance and layout in both modes.
+
+### Fixed
+
+- Fixed Snapshot card remaining in wrong mode after theme toggle.
+- Fixed unreadable text in Snapshot in light mode.
+- Fixed incorrect double-colon behavior in trend summaries.
+- Fixed badge summary count not updating after unlocking new badges.
+- Fixed unlocked badges not switching to primary-colored backgrounds.
+
+### Notes
+
+- This release completes the motivation-focused work for v1.9 and sets the foundation for richer analytics and badge expansion in future versions.
+
+---
+
 ## [v1.8.0] — Sessions & Backups (2025-12-05)
 
 ### Added

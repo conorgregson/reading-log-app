@@ -184,75 +184,83 @@ Released: Dec 2025
 
 ---
 
-### 🎨 Version 1.9 — Visualization & Motivation
+### ✅ Version 1.9 — Visualization & Motivation
 
-- [ ] Basic charts (per-book progress, per-day trends)
+- [x] Basic charts (per-book progress, per-day trends)
   - _AC_: User can view charts generated from session data; includes per-book progress + per-day/weekly trend; charts update automatically when sessions change; supports light/dark mode.
-- [ ] Badges for hitting goals (light gamification)
+- [x] Badges for hitting goals (light gamification)
   - _AC_: App awards visible badges for milestones (first streaks, books finished, pages/minutes logged); badges appear in a new Profile → Badges view; includes toast on unlock.
-- [ ] Keyboard shortcuts for quick session logging
+- [x] Keyboard shortcuts for quick session logging
   - _AC_: User can open New Session with a shortcut (e.g., `N`), navigate Session History rows with arrows + Enter, and toggle shortcuts in Settings for accessibility.
-- [ ] Shareable progress snapshot
+- [x] Shareable progress snapshot
   - _AC_: User can export/share an image containing reading streak, book progress, and earned badges; snapshot uses a branded layout and works in PWA and browser.
-- [ ] A11y: charts + badges readable without visuals
+- [x] A11y: charts + badges readable without visuals
   - _AC_: Charts include alt-text summaries (“Reading increased 15% week-over-week”); badges have ARIA labels; shareable snapshot generates a text-based equivalent.
-- [ ] Chart themes (optional aesthetic/accent modes)
+- [x] Chart themes (optional aesthetic/accent modes)
   - _AC_: User can toggle light, dark, and monochrome chart themes; themes persist and respect system settings.
-- [ ] Trend ranges (weekly, monthly, yearly)
+- [x] Trend ranges (weekly, monthly, yearly)
   - _AC_: User can switch between time ranges; app calculates percent change (e.g., “27% more reading this week”).
-- [ ] Stats layer / analytics module
+- [x] Stats layer / analytics module
   - _AC_: Centralize all reading metrics into an analytics module (pages, minutes, streaks, trends); charts read from this layer; memoization improves performance on large libraries.
-- [ ] Cleanup & structure: charts + badges modules
+- [x] Cleanup & structure: charts + badges modules
   - _AC_: Add `features/charts.js`, `features/badges.js`, and reusable `<chart-container>` UI; remove old streak logic replaced by analytics layer.
 
-Planned Q4 2025
+Released: Dec 2025
 
 ---
 
 ### 🚀 Version 2.0 — React Frontend (MERN Start)
 
 - [ ] Scaffold React app (with JSX)
-      _AC:_ `npm run dev` starts without errors; root component renders; README has “How to run."
-- [ ] Port Add/Import/Export as React components
-      _AC:_ All three features behave the same as v1.0.0; import rejects invalid JSON.
-- [ ] Choose styling framework (Bootstrap or Tailwind; match teal theme)
-      _AC:_ One shared Button (or Card) component implemented; teal `#008080` used consistently.
-- [ ] CI: type check (optional TS), lint, unit tests on PRs
-      _AC:_ `npm test` passes locally; `npm run lint` or precommit hooks catch obvious issues.
-
-Planned: Q4 2025
-
----
-
-### 🌐 Version 2.1 — Express API + MongoDB
-
-- [ ] Setup Node/Express backend
-      _AC:_ `npm start` serves `/health` → 200 JSON `{status:"ok"}`.
-- [ ] Define `Book` model in MongoDB
-      _AC:_ Schema includes: title, author, status, createdAt; rejects empty title/author.
-- [ ] CRUD API routes for books (+ pagination)
-      _AC:_ POST/GET/PUT/DELETE return proper status codes; GET supports `?page=&limit=`.
-- [ ] Connect React frontend to API
-      _AC:_ List loads from API; adding a book updates UI without manual refresh.
-- [ ] Import/Export via API
-      _AC:_ POST `/import` accepts backup JSON; GET `/export` returns current books.
-- [ ] Security baseline: HTTPS-only doc + Helmet/CORS/rate limiting
-      _AC:_ Helmet enabled, CORS restricted to frontend URL, basic rate limiting applied.
+  - _AC:_ `npm run dev` runs without errors; root component renders; README updated with “How to run.”
+- [ ] Port Add/Import/Export to React components
+  - _AC:_ Behaves identically to v1.x; invalid JSON import properly rejected; all dialogs functional.
+- [ ] Port Book List, Filters, and Search UI
+  - _AC:_ Core book browsing features match v1.9; search/filtering identical in results and performance.
+- [ ] Choose UI styling framework (Tailwind preferred, Bootstrap optional)
+  - _AC:_ Shared Button, Card, Input components exist; global teal theme (`#008080`) applied consistently.
+- [ ] Implement React state architecture (Context or Redux-lite)
+  - _AC:_ Books, settings, and UI state managed consistently; no prop-drilling for major features.
+- [ ] CI pipeline: lint, type-check (optional TS), test baseline
+  - _AC:_ GitHub Actions runs lint + tests on PRs; `npm test` and `npm run lint` clean locally.
 
 Planned: Q1 2026
 
 ---
 
-### 🔑 Version 2.2 — Authentication (Optional but recommended)
+### 🌐 Version 2.1 — Express API + PostgreSQL
+
+- [ ] Setup Node/Express backend
+  - _AC:_ `npm start` serves `/health` → 200 with `{status:"ok"}` JSON.
+- [ ] Define PostgreSQL models for Books + Sessions
+  - _AC:_ Book schema includes title, author, status, createdAt; Session includes bookId, minutes, notes, date.
+- [ ] CRUD API routes for books (+ pagination)
+  - _AC:_ POST/GET/PUT/DELETE return correct codes; GET supports `?page=&limit=`; validation rejects empty fields.
+- [ ] CRUD API for reading sessions
+  - _AC:_ Sessions can be created, edited, listed, and deleted; invalid/malformed session data rejected.
+- [ ] Connect React frontend to API
+  - _AC:_ Books and Sessions load from API; creating or editing updates UI without reload.
+- [ ] Import/Export via API
+  - _AC:_ POST `/import` accepts validated backup JSON; GET `/export` returns user’s current books + sessions.
+- [ ] Security baseline (production-ready)
+  - _AC:_ Helmet enabled; CORS limited to frontend domain; rate limiting applied; only HTTPS documented.
+- [ ] Local dev environment setup (Docker optional)
+  - _AC:_ `docker-compose up` runs API + PostgreSQL locally; DB migrations documented.
+
+Planned: Q1 2026
+
+---
+
+### 🔑 Version 2.2 — Authentication
 
 - [ ] Add per-user accounts (JWT or OAuth)
-      _AC:_ Signup/login works; passwords hashed; tokens signed with secret.
+  - _AC:_ Signup/login works; passwords hashed; tokens signed with secret.
 - [ ] Scope reading logs to users
-      _AC:_ Users only sees and modify their own books; 401/403 returned otherwise.
+  - _AC:_ Users only sees and modify their own books; 401/403 returned otherwise.
 - [ ] Secure routes and API access
-      _AC:_ Auth middleware validates tokens; refresh/expiry rules documented.
+  - _AC:_ Auth middleware validates tokens; refresh/expiry rules documented.
 - [ ] Token storage strategy documented
-      _AC:_ One-paragraph note in README explains where tokens live (cookie vs storage) and why.
+  - _AC:_ One-paragraph note in README explains where tokens live (cookie vs storage) and why.
 
 Planned: Q2 2026
 
@@ -261,32 +269,135 @@ Planned: Q2 2026
 ### 👨🏻‍💻 Version 2.3 — UI & Experience
 
 - [ ] Dark mode toggle
-      _AC:_ Toggle persists across reload; system preference respected on first load.
+  - _AC:_ Toggle persists across reload; system preference respected on first load.
 - [ ] Notes/annotations per book
-      _AC:_ Add/edit/delete a note inline; notes persist in DB.
+  - _AC:_ Add/edit/delete a note inline; notes persist in DB.
 - [ ] Responsive design (Bootstrap/Tailwind layouts)
-      _AC:_ Works on ~360px wide; no horizontal scroll; tap targets ≥ 44px.
+  - _AC:_ Works on ~360px wide; no horizontal scroll; tap targets ≥ 44px.
 - [ ] Empty states & toasts for better UX
-      _AC:_ Empty list shows a friendly hint; add/delete triggers a toast.
+  - _AC:_ Empty list shows a friendly hint; add/delete triggers a toast.
 
 Planned: Q2 2026
+
+---
+
+### 🎖️ Version 2.4 — Badge System Overhaul
+
+## Goals
+
+Establish badges as a structured, scalable, motivating system backed by server-side evaluation, categories, tiers, progress tracking, and deeper integration with Snapshot & Stats. This upgrade forms the foundation for future badge expansions without UI or logic bloat.
+
+---
+
+#### 👨🏻‍💻 Data Model & Backend Foundations
+
+- [ ] **Badge definitions stored server-side**
+  - _AC:_ `badges` table/collection includes: category, tier, description, hint, iconKey, colorKey, sortOrder, isHidden.
+- [ ] **User badge state persisted**
+  - _AC:_ `user_badges` table/collection tracks unlockedAt, progressValue, progressMax, seen, lastEvaluatedAt.
+- [ ] **Backend badge evaluation engine**
+  - _AC:_ Server recomputes badge progress/unlocks on session save, book completion, and scheduled daily job.
+- [ ] **Category-based evaluators**
+  - _AC:_ Each badge category (streak, volume, time, diversity, special) has a dedicated evaluator module.
+
+Planned: TBD
+
+---
+
+#### 🌐 API & Client Integration
+
+- [ ] **Unified `/api/user/badges` endpoint**
+  - _AC:_ Returns list of badges with state, progress, hints, and unlocked history.
+- [ ] **Badge highlight aggregator**
+  - _AC:_ API provides `recentUnlocked` and `nextTarget` to support Snapshot & Stats.
+- [ ] **Real-time unlock notifications**
+  - _AC:_ Frontend receives badge unlock events via polling/WebSocket.
+
+Planned: TBD
+
+---
+
+#### 🔑 Badge Categories, Tiers & Visual System
+
+- [ ] **Introduce badge categories**
+  - _AC:_ UI groups badges under Streak, Volume, Time, Diversity, Special.
+- [ ] **Introduce tiers**
+  - _AC:_ Bronze/Silver/Gold/Legendary tiers styled consistently with color tokens.
+- [ ] **Tier-driven card styling**
+  - _AC:_ Badge cards visually reflect tier (border, color, emphasis).
+- [ ] **Icon system refresh**
+  - _AC:_ Icon keys map to consistent glyph collection (e.g., book-stack, flame, compass).
+
+Planned: TBD
+
+---
+
+#### 🎨 Front-End UI/UX Upgrades
+
+- [ ] **Progress indicators for in-progress badges**
+  - _AC:_ Locked/in-progress badges show progress bars or `x/y` text.
+- [ ] **Badge detail modal**
+  - _AC:_ Clicking a badge opens modal with tier, category, description, progress, conditions, and unlock history.
+- [ ] **Improved badge grid layout**
+  - _AC:_ Grid supports category group headers; distributes locked/unlocked badges cleanly.
+- [ ] **Hint system**
+  - _AC:_ Locked badges show dynamic hints (e.g., “Read 2 more days to unlock”).
+
+Planned: TBD
+
+---
+
+#### 🌍 Integration With Snapshot & Reading Stats
+
+- [ ] **Snapshot badge highlight**
+  - _AC:_ Snapshot displays most recent unlocked badge or closest badge to unlocking.
+- [ ] **Stats panel badge summary**
+  - _AC:_ Stats show total unlocked, recent badges, and next target.
+- [ ] **Optional badge export support**
+  - _AC:_ Exported snapshot includes highlighted badge icon + name.
+
+Planned: TBD
+
+---
+
+#### 🦾 Accessibility & Notifications
+
+- [ ] **Accessible unlock announcements**
+  - _AC:_ Badge unlock events trigger ARIA live region updates (toast + summary).
+- [ ] **Keyboard navigable badge grid**
+  - _AC:_ Arrow-key navigation works across all categories and tiers.
+- [ ] **Accessible progress messages**
+  - _AC:_ Each badge exposes descriptive progress text (“1 day remaining”).
+
+Planned: TBD
+
+---
+
+#### 🎯 Long-Term Extensions (Beyond v2.1)
+
+- [ ] Event/seasonal badges
+- [ ] Secret badges (hidden until unlocked)
+- [ ] Badge-based profile customization
+- [ ] XP/Reader Level system
+- [ ] Social achievement feed (optional)
+- [ ] Badge rarity statistics (“Unlocked by 12% of readers”)
 
 ---
 
 ### 🌍 Version 3.0 — Deployment & Growth
 
 - [ ] Deploy backend (Render, Railway, or Fly.io)
-      _AC:_ Public URL `/health` is 200; env vars set server-side.
+  - _AC:_ Public URL `/health` is 200; env vars set server-side.
 - [ ] Deploy frontend (Netlify or Vercel)
-      _AC:_ Public URL loads app and communicates with live API.
+  - _AC:_ Public URL loads app and communicates with live API.
 - [ ] Environment variable setup for API URLs
-      _AC:_ No hard-coded localhost in production build; README lists `.env` keys.
+  - _AC:_ No hard-coded localhost in production build; README lists `.env` keys.
 - [ ] CI/CD pipeline (build, test, deploy)
-      _AC:_ README explains deployment process; minimal script included.
+  - _AC:_ README explains deployment process; minimal script included.
 - [ ] Public demo with live data sync
-      _AC:_ Demo account works; reset/demo steps documented.
+  - _AC:_ Demo account works; reset/demo steps documented.
 
-Planned: Q3 2026
+Planned: TBD
 
 ---
 

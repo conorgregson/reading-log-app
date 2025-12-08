@@ -1,5 +1,5 @@
-// Service Worker for Readr v1.8.0
-const VERSION = "v1.8.0";
+// Service Worker for Readr v1.9.0
+const VERSION = "v1.9.0";
 const CACHE_STATIC = `readr-static-${VERSION}`;
 const CACHE_RUNTIME = `readr-runtime-${VERSION}`;
 const MAX_RUNTIME_ENTRIES = 60;

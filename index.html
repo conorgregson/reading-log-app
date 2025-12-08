@@ -288,6 +288,17 @@
             Check Updates
           </button>
 
+          <!-- Keyboard shortcuts toggle -->
+          <button
+            id="shortcuts-toggle"
+            class="r-btn r-btn--sm"
+            role="menuitemcheckbox"
+            aria-checked="true"
+            tabindex="-1"
+          >
+            Keyboard shortcuts
+          </button>
+
           <hr
             class="menu-separator"
             role="separator"
@@ -825,6 +836,238 @@
       </div>
     </section>
 
+    <section id="profile-badges" class="card" aria-label="Badges">
+      <h2>Badges</h2>
+      <p
+        class="muted"
+        data-badges-summary
+        role="status"
+        aria-live="polite"
+        aria-atomic="true"
+      >
+        0 of 0 badges unlocked
+      </p>
+      <div class="badges-grid" data-badges-list></div>
+    </section>
+
+    <!-- Reading Stats & Charts -->
+    <section id="charts-panel" aria-label="Reading stats and trends">
+      <h2>Reading Stats</h2>
+
+      <div class="chart-grid">
+        <!-- Per-day trend chart -->
+        <section
+          class="chart-card"
+          data-chart="per-day"
+          aria-label="Reading trend over time"
+          aria-describedby="chart-summary-per-day"
+        >
+          <header class="chart-header">
+            <h3>Trend</h3>
+            <div
+              class="chart-range-group"
+              data-chart-range-group
+              aria-label="Trend range"
+              role="radiogroup"
+            >
+              <!-- 7 days (default active) -->
+              <button
+                type="button"
+                class="r-btn r-btn--sm chart-range-btn"
+                data-range="week"
+                aria-pressed="true"
+              >
+                7 days
+              </button>
+
+              <!-- 30 days -->
+              <button
+                type="button"
+                class="r-btn r-btn--small chart-range-btn"
+                data-range="month"
+                aria-pressed="false"
+              >
+                30 days
+              </button>
+
+              <!-- 365 days -->
+              <button
+                type="button"
+                class="r-btn r-btn--sm chart-range-btn"
+                data-range="year"
+                aria-pressed="false"
+              >
+                365 days
+              </button>
+            </div>
+          </header>
+
+          <div class="chart-body" data-chart-body></div>
+          <p
+            id="chart-summary-per-day"
+            class="chart-summary"
+            data-chart-summary="per-day"
+            role="status"
+            aria-live="polite"
+            aria-atomic="true"
+          ></p>
+        </section>
+
+        <!-- Per-book (top books) chart -->
+        <section
+          class="chart-card"
+          data-chart="per-book"
+          aria-label="Top books by reading time"
+          aria-describedby="chart-summary-per-book"
+        >
+          <header class="chart-header">
+            <h3>Top Books</h3>
+          </header>
+
+          <div class="chart-body" data-chart-body></div>
+          <p
+            id="chart-summary-per-book"
+            class="chart-summary"
+            data-chart-summary="per-book"
+            role="status"
+            aria-live="polite"
+            aria-atomic="true"
+          ></p>
+        </section>
+      </div>
+
+      <div class="row snapshot-actions">
+        <button
+          id="snapshot-copy"
+          type="button"
+          class="r-btn r-btn--sm r-btn--ghost"
+        >
+          Copy snapshot summary
+        </button>
+        <p class="muted snapshot-hint">
+          Copies a text summary of your recent reading (for notes or sharing).
+        </p>
+      </div>
+    </section>
+
+    <!-- Shareable Snapshot (image-friendly card) -->
+    <section id="snapshot-panel" aria-label="Shareable reading snapshot">
+      <h2>Shareable Snapshot</h2>
+
+      <div class="snapshot-card" data-snapshot-card>
+        <header class="snapshot-card__header">
+          <div class="snapshot-card__brand">
+            <span class="snapshot-card__logo"
+              ><img
+                src="/images/readr_logo_R_teal_master.png"
+                alt="Readr logo"
+                class="snapshot-logo snapshot-logo--light"
+              />
+              <img
+                src="/images/readr_logo_R_white_master.png"
+                alt=""
+                class="snapshot-logo snapshot-logo--dark"
+                aria-hidden="true"
+              />
+            </span>
+            <span class="snapshot-card__title">Readr</span>
+          </div>
+          <p class="snapshot-card__tagline">Turn pages into progress</p>
+          <p class="snapshot-card__range" data-snapshot-range>Last 7 days</p>
+        </header>
+
+        <div class="snapshot-card__body">
+          <section class="snapshot-card__stats" aria-label="Snapshot stats">
+            <p class="snapshot-card__metric" data-snapshot-metric>0 minutes</p>
+            <p class="snapshot-card__sessions" data-snapshot-sessions>
+              0 sessions
+            </p>
+            <p class="snapshot-card__streak" data-snapshot-streak>
+              Streak: 0 days (best 0)
+            </p>
+            <p
+              class="snapshot-card__trend"
+              data-snapshot-trend
+              role="status"
+              aria-live="polite"
+              aria-atomic="true"
+            >
+              Trend: no reading yet.
+            </p>
+          </section>
+
+          <section class="snapshot-card__books" aria-label="Top books">
+            <h3>Top books</h3>
+            <ul data-snapshot-books></ul>
+            <p class="snapshot-card__empty" data-snapshot-books-empty>
+              No books with reading yet in this range.
+            </p>
+          </section>
+
+          <section class="snapshot-card__badges" aria-label="Badges earned">
+            <h3>Badges</h3>
+            <ul data-snapshot-badges></ul>
+            <p class="snapshot-card__empty" data-snapshot-badges-empty>
+              No badges unlocked yet — keep reading!
+            </p>
+          </section>
+        </div>
+
+        <footer class="snapshot-card__footer">
+          <p class="snapsot-card__date" data-snapshot-date>
+            Generated just now
+          </p>
+        </footer>
+      </div>
+
+      <div class="row snapshot-controls">
+        <div
+          class="snapshot-range-group"
+          data-snapshot-range-group
+          role="radiogroup"
+          aria-label="Snapshot range"
+        >
+          <button
+            type="button"
+            class="r-btn r-btn--sm snapshot-range-btn is-active"
+            data-range="week"
+            aria-pressed="true"
+          >
+            7 days
+          </button>
+          <button
+            type="button"
+            class="r-btn r-btn--sm snapshot-range-btn"
+            data-range="month"
+            aria-pressed="false"
+          >
+            30 days
+          </button>
+          <button
+            type="button"
+            class="r-btn r-btn--sm snapshot-range-btn"
+            data-range="year"
+            aria-pressed="false"
+          >
+            365 days
+          </button>
+        </div>
+
+        <button
+          id="snapshot-download"
+          type="button"
+          class="r-btn r-btn--primary r-btn--sm"
+        >
+          Download snapshot image
+        </button>
+      </div>
+
+      <p class="muted snapshot-hint">
+        Creates a branded image with your streak, recent reading, top books, and
+        badges for sharing in text messages or social media posts.
+      </p>
+    </section>
+
     <section id="book-goals">
       <h2>Book Goals</h2>
       <div class="row" role="group" aria-labelledby="book-goals">
@@ -893,6 +1136,20 @@
 
         <button type="submit" class="r-btn r-btn--primary">Add Session</button>
       </form>
+
+      <!-- Keyboard shortcuts hint (shown only when shortcuts are enabled) -->
+      <p
+        id="shortcuts-hint"
+        class="shortcuts-hint"
+        hidden
+        role="status"
+        aria-live="polite"
+        aria-atomic="true"
+      >
+        Shortcuts on: Press <kbd>N</kbd> to add a session, <kbd>H</kbd> to jump
+        to Session Histroy search, use <kbd>↑</kbd>/<kbd>↓</kbd> to move between
+        rows, <kbd>Enter</kbd> to edit, and <kbd>Esc</kbd> to return to search.
+      </p>
     </section>
 
     <section id="session-history">
@@ -1034,6 +1291,9 @@
       aria-live="polite"
       aria-atomic="true"
     ></div>
+
+    <!-- Third-party helper for snapshot image export -->
+    <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
 
     <script type="module" src="./app.js"></script>
     <script type="module" src="./dev/smoke.js"></script>

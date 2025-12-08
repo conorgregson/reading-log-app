@@ -15,6 +15,7 @@ export function initSettings({ adapters } = {}) {
   wirePreferencesReset();
   wireInstallButton();
   wireGoalRemindersToggle();
+  wireShortcutsToggle();
 }
 
 // -----------------------------
@@ -360,6 +361,55 @@ function wireGoalRemindersToggle() {
 
     // Settings saved toast
     A.showToast?.(`Goal reminders: ${enabled ? "On" : "Off"}`, "success");
+  });
+}
+
+function wireShortcutsToggle() {
+  const SHORTCUTS_KEY = "readr:shortcuts:v1";
+  const btn = document.getElementById("shortcuts-toggle");
+  if (!btn) return;
+
+  const loadEnabled = () => {
+    try {
+      const raw = localStorage.getItem(SHORTCUTS_KEY);
+      if (raw === null) {
+        // Default ON for non-touch devices, OFF for touch
+        return !("ontouchstart" in window);
+      }
+      if (raw === "true" || raw === "false") return raw === "true";
+      return !!JSON.parse(raw);
+    } catch {
+      return true;
+    }
+  };
+
+  const saveEnabled = (value) => {
+    try {
+      localStorage.setItem(SHORTCUTS_KEY, JSON.stringify(!!value));
+    } catch {
+      // ignore quota errors
+    }
+  };
+
+  const syncVisual = (isOn) => {
+    btn.setAttribute("aria-checked", isOn ? "true" : "false");
+  };
+
+  let enabled = loadEnabled();
+  syncVisual(enabled);
+
+  // Tell app.js about the initial state
+  A.toggleShortcuts?.(enabled);
+
+  btn.addEventListener("click", () => {
+    enabled = !enabled;
+    syncVisual(enabled);
+    saveEnabled(enabled);
+
+    // Notify app.js
+    A.toggleShortcuts?.(enabled);
+
+    A.showToast?.(`Keyboard shortcuts: ${enabled ? "On" : "Off"}`, "success");
   });
 }
 
